@@ -12,7 +12,7 @@ from request import Request
 # status is a string that communicates the Pod's availability. ['PENDING','RUNNING', 'TERMINATING', 'FAILED']
 # the pool is the threads that are available for request handling on the pod
 class Pod:
-    def __init__(self, NAME, ASSIGNED_CPU, ASSIGNED_MEM, AVAILABLE_CPU, AVAILABLE_MEM, DEPLABEL):
+    def __init__(self, NAME, ASSIGNED_CPU, AVAILABLE_CPU, DEPLABEL):
         self.podName = NAME
         self.available_cpu = ASSIGNED_CPU
         self.deploymentLabel = DEPLABEL

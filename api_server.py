@@ -1,4 +1,5 @@
 import threading
+from types import List
 
 from deployment import Deployment
 from end_point import EndPoint
@@ -56,8 +57,11 @@ class APIServer:
         pass
 
     # GetEndPointsByLabel returns a list of EndPoints associated with a given deployment
-    def GetEndPointsByLabel(self, deploymentLabel):
-        pass
+    def GetEndPointsByLabel(self, deploymentLabel: str) -> List[EndPoint]:
+        return list(filter(
+            lambda endpoint: endpoint.deploymentLabel == deploymentLabel,
+            self.etcd.endPointList,
+        ))
 
     # CreatePod finds the resource allocations associated with a deployment and creates a pod using those metrics
     def CreatePod(self, deploymentLabel):

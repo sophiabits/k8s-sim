@@ -64,8 +64,11 @@ class APIServer:
         ))
 
     # CreatePod finds the resource allocations associated with a deployment and creates a pod using those metrics
-    def CreatePod(self, deploymentLabel):
-        pass
+    def CreatePod(self, deployment: Deployment):
+        # TODO document that we changed deploymentLabel -> deployment
+
+        pod = Pod(f'pod_name_todo', deployment.cpuCost, deployment.deploymentLabel)
+        self.etcd.pendingPodList.append(pod)
 
     # GetPod returns the pod object stored in the internal podList of a WorkerNode
     def GetPod(self, endPoint):

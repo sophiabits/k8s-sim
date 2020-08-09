@@ -46,7 +46,20 @@ class APIServer:
 
     # RemoveDeployment deletes the associated Deployment object from etcd and sets the status of all associated pods to 'TERMINATING'
     def RemoveDeployment(self, deploymentLabel: str):
-        pass
+        endpoints = self.GetEndPointsByLabel(deploymentLabel)
+
+        print('[APIServer] Deleting deployment', deploymentLabel)
+        for endpoint in endpoints:
+            # Mark the pod as TERMINATING
+
+            print('[APIServer] .. flagging pod as TERMINATING', endpoint.pod.podName)
+            self.TerminatePod(endpoint)
+            self.etcd.endPointList.remove(endpoint)
+
+        for deployment in self.etcd.deploymentList:
+            if deployment.deploymentLabel == deploymentLabel:
+                self.etcd.deploymentList.remove(deployment)
+                break
 
     # CreateEndpoint creates an EndPoint object using information from a provided Pod and Node and appends it
     # to the endPointList in etcd
@@ -90,15 +103,15 @@ class APIServer:
         self.etcd.pendingPodList.append(pod)
         deployment.currentReplicas += 1
 
-    # GetPod returns the pod object stored in the internal podList of a WorkerNode
-    def GetPod(self, endPoint):
-        pass
+    # # GetPod returns the pod object stored in the internal podList of a WorkerNode
+    # def GetPod(self, endPoint):
+    #     pass
 
     # TerminatePod finds the pod associated with a given EndPoint and sets it's status to 'TERMINATING'
     # No new requests will be sent to a pod marked 'TERMINATING'. Once its current requests have been handled,
     # it will be deleted by the Kubelet
-    def TerminatePod(self, endPoint):
-        pass
+    def TerminatePod(self, endPoint: EndPoint):
+        endPoint.pod.status = 'TERMINATING'
 
     # CrashPod finds a pod from a given deployment and sets its status to 'FAILED'
     # Any resource utilisation on the pod will be reset to the base 0

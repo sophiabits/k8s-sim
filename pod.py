@@ -19,11 +19,16 @@ class Pod:
         self.status = 'PENDING'
         self.crash = threading.Event()
         self.pool = ThreadPoolExecutor(max_workers=ASSIGNED_CPU)
+
+        self._futures = []
         self.threads_running = 0
 
     def has_capacity(self):
         print(f'[Pod] {self.podName} is checking capacity {self.threads_running}/{self.available_cpu}')
         return self.threads_running < self.available_cpu
+
+    def is_running(self):
+        return all([f.done() for f in self._futures])
 
     def HandleRequest(self, request: Request):
         def handler():
@@ -34,8 +39,8 @@ class Pod:
                 # TODO -- log that this request crashed
                 print('[Pod] Request crashed during handling!', self.podName, request.request_id)
             else:
-                print('[Pod] finished request', request.request_id)
+                print('[Pod] finished request', self.podName, request.request_id)
 
             self.threads_running -= 1
 
-        self.pool.submit(handler)
+        self._futures.append(self.pool.submit(handler))

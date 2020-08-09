@@ -24,7 +24,14 @@ class DepController:
                         # Create pods as needed in order to reach expectedReplicas
                         self.apiServer.CreatePod(deployment)
 
-                    # TODO -- delete 'TERMINATING' pods?
+                    for endpoint in self.apiServer.GetEndPointsByLabel(deployment.deploymentLabel):
+                        pod = endpoint.pod
+                        if pod.status == 'TERMINATING' and not pod.is_running():
+                            # Delete this pod
+                            print('[DepController] Deleting TERMINATING pod which has drained', pod.podName)
+
+                            deployment.currentReplicas -= 1
+                            self.apiServer.etcd.runningPodList.remove(pod)
 
             time.sleep(self.time)
         print("DepContShutdown")

@@ -1,5 +1,5 @@
 import threading
-from types import List
+from typing import List
 
 from deployment import Deployment
 from end_point import EndPoint

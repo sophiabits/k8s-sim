@@ -45,7 +45,7 @@ class APIServer:
         self.etcd.deploymentList.append(deployment)
 
     # RemoveDeployment deletes the associated Deployment object from etcd and sets the status of all associated pods to 'TERMINATING'
-    def RemoveDeployment(self, deploymentLabel):
+    def RemoveDeployment(self, deploymentLabel: str):
         pass
 
     # CreateEndpoint creates an EndPoint object using information from a provided Pod and Node and appends it
@@ -102,8 +102,17 @@ class APIServer:
 
     # CrashPod finds a pod from a given deployment and sets its status to 'FAILED'
     # Any resource utilisation on the pod will be reset to the base 0
-    def CrashPod(self, depLabel):
-        pass
+    def CrashPod(self, deploymentLabel: str):
+        endpoints = self.GetEndPointsByLabel(deploymentLabel)
+        if not endpoints:
+            print('[APIServer] Failed to find pod for deployment to crash:', deploymentLabel)
+            return
+
+        # Crash the first endpoint in the list
+        pod = endpoints[0].pod
+        print('[APIServer] Crashing pod', pod.podName)
+        pod.status = 'FAILED'
+        pod.crash.set()
 
     # AssignNode takes a pod in the pendingPodList and transfers it to the internal podList of a specified WorkerNode
     def AssignNode(self, pod, worker):

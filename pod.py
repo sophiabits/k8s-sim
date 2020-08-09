@@ -29,12 +29,13 @@ class Pod:
         def handler():
             self.threads_running += 1
             print('[Pod] servicing request:', request.request_id)
-            timed_out = self.crash.wait(timeout=request.execTime)
-            if not timed_out:
+            crashed = self.crash.wait(timeout=request.execTime)
+            if crashed:
                 # TODO -- log that this request crashed
-                pass
+                print('[Pod] Request crashed during handling!', self.podName, request.request_id)
+            else:
+                print('[Pod] finished request', request.request_id)
 
-            print('[Pod] finished request', request.request_id)
             self.threads_running -= 1
 
         self.pool.submit(handler)

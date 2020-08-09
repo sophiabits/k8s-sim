@@ -38,7 +38,8 @@ class APIServer:
 
     # CreateDeployment creates a Deployment object from a list of arguments and adds it to the etcd deploymentList
     def CreateDeployment(self, info):
-        pass
+        deployment = Deployment(info)
+        self.etcd.deploymentList.append(deployment)
 
     # RemoveDeployment deletes the associated Deployment object from etcd and sets the status of all associated pods to 'TERMINATING'
     def RemoveDeployment(self, deploymentLabel):

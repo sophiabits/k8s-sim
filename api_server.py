@@ -96,8 +96,8 @@ class APIServer:
     def AssignNode(self, pod, worker):
         pass
 
-    # pushReq adds the incoming request to the handling queue
-    def pushReq(self, info):
+    # PushReq adds the incoming request to the handling queue
+    def PushReq(self, info):
         self.etcd.reqCreator.submit(self.reqHandle, info)
 
     # Creates requests and notifies the handler of request to be dealt with

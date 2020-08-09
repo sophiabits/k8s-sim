@@ -29,7 +29,7 @@ class Scheduler(threading.Thread):
                             continue
 
                         # We found a suitable node
-                        print(f'[Scheduler] Assigning pod {id(pod)} to worker {id(node)}')
+                        print(f'[Scheduler] Assigning pod {pod.podName} to worker {node.label}')
                         self.apiServer.CreateEndPoint(pod, node)
 
                         # Only need to assign the pod once

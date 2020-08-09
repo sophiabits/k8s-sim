@@ -53,8 +53,8 @@ class APIServer:
         pass
 
     # CheckEndPoint checks that the associated pod is still present on the expected WorkerNode
-    def CheckEndPoint(self, endPoint):
-        pass
+    def CheckEndPoint(self, endPoint: EndPoint) -> bool:
+        return endPoint.pod.status == 'RUNNING'
 
     # GetEndPointsByLabel returns a list of EndPoints associated with a given deployment
     def GetEndPointsByLabel(self, deploymentLabel: str) -> List[EndPoint]:

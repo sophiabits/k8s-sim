@@ -49,8 +49,15 @@ class APIServer:
 
     # CreateEndpoint creates an EndPoint object using information from a provided Pod and Node and appends it
     # to the endPointList in etcd
-    def CreateEndPoint(self, pod, worker):
-        pass
+    def CreateEndPoint(self, pod: Pod, worker: WorkerNode):
+        endpoint = EndPoint(pod, pod.deploymentLabel, worker)
+        # TODO
+        # worker.available_cpu -= pod.available_cpu
+        self.etcd.endPointList.append(endpoint)
+
+        # Transfer the pod pendingPodList -> runningPodList
+        self.etcd.pendingPodList.remove(pod)
+        self.etcd.runningPodList.append(pod)
 
     # CheckEndPoint checks that the associated pod is still present on the expected WorkerNode
     def CheckEndPoint(self, endPoint: EndPoint) -> bool:

@@ -62,6 +62,9 @@ class APIServer:
         self.etcd.pendingPodList.remove(pod)
         self.etcd.runningPodList.append(pod)
 
+        # Transition pod state to RUNNING
+        pod.status = 'RUNNING'
+
     # CheckEndPoint checks that the associated pod is still present on the expected WorkerNode
     def CheckEndPoint(self, endPoint: EndPoint) -> bool:
         return endPoint.pod.status == 'RUNNING'
@@ -83,7 +86,7 @@ class APIServer:
         assert deployment.currentReplicas < deployment.expectedReplicas
 
         pod = Pod(f'{deployment.deploymentLabel}:{id_suffix}', deployment.cpuCost, deployment.deploymentLabel)
-        print('Created pod:', pod.podName)
+        print('[APIServer] Created pod:', pod.podName)
         self.etcd.pendingPodList.append(pod)
         deployment.currentReplicas += 1
 

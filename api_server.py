@@ -1,5 +1,6 @@
 import threading
 from typing import List
+import uuid
 
 from deployment import Deployment
 from end_point import EndPoint
@@ -74,7 +75,10 @@ class APIServer:
     def CreatePod(self, deployment: Deployment):
         # TODO document that we changed deploymentLabel -> deployment
 
-        pod = Pod(f'pod_name_todo', deployment.cpuCost, deployment.deploymentLabel)
+        id_suffix = str(uuid.uuid4()).split('-')[0]
+
+        pod = Pod(f'{deployment.deploymentLabel}:{id_suffix}', deployment.cpuCost, deployment.deploymentLabel)
+        print('Created pod:', pod.podName)
         self.etcd.pendingPodList.append(pod)
 
     # GetPod returns the pod object stored in the internal podList of a WorkerNode

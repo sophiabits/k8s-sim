@@ -52,8 +52,10 @@ class APIServer:
     # to the endPointList in etcd
     def CreateEndPoint(self, pod: Pod, worker: WorkerNode):
         endpoint = EndPoint(pod, pod.deploymentLabel, worker)
-        # TODO
-        # worker.available_cpu -= pod.available_cpu
+
+        assert worker.available_cpu >= pod.available_cpu
+        worker.available_cpu -= pod.available_cpu
+
         self.etcd.endPointList.append(endpoint)
 
         # Transfer the pod pendingPodList -> runningPodList
@@ -77,9 +79,13 @@ class APIServer:
 
         id_suffix = str(uuid.uuid4()).split('-')[0]
 
+        # TODO -- do we adjust currentReplicas now? or only when a pod transitions status from PENDING -> RUNNING?
+        assert deployment.currentReplicas < deployment.expectedReplicas
+
         pod = Pod(f'{deployment.deploymentLabel}:{id_suffix}', deployment.cpuCost, deployment.deploymentLabel)
         print('Created pod:', pod.podName)
         self.etcd.pendingPodList.append(pod)
+        deployment.currentReplicas += 1
 
     # GetPod returns the pod object stored in the internal podList of a WorkerNode
     def GetPod(self, endPoint):

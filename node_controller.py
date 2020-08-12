@@ -18,9 +18,9 @@ class NodeController:
         while self.running:
             with self.apiServer.etcdLock:
                 # Check information on each WorkerNode in etcd
-                # Update EndPoints when they are no longer valid
-                # Restart failed pods
+                # Update EndPoints when they are no longer valid -- TODO what does that mean?
 
+                # Restart failed pods
                 for endpoint in self.apiServer.GetEndPoints():
                     print('[NodeController]', endpoint.deploymentLabel, endpoint.pod.status)
                     if endpoint.pod.status == 'FAILED':
@@ -29,19 +29,9 @@ class NodeController:
                         self.apiServer.RemoveEndPoint(endpoint)
 
                         # Allow pod to be rescheduled by the scheduler
+                        print('[NodeController] Marking failed pod as pending for rescheduling', endpoint.pod.podName)
                         endpoint.pod.status = 'PENDING'
                         self.apiServer.etcd.pendingPodList.append(endpoint.pod)
-
-                    # Do we need to handle status == 'TERMINATING'?
-
-                    # if not self.apiServer.CheckEndPoint(endpoint):
-                    #     # Pod is not alive, so restart it -- set statuus to PENDING and move to pendingPodList
-                    #     # TODO -- does restarting mean we set status = 'PENDING' and move it to pendingPodList here?
-                    #     #      -- or does restarting just mean we let DepController handle it in its next loop (which is what I've done for now?)
-                    #     pod = endpoint.pod
-                    #     print('[NodeController] Restarting pod', pod.podName)
-                    #     self.apiServer.etcd.endPointList.remove(endpoint)
-                    #     self.apiServer.etcd.runningPodList.remove(pod)
 
             time.sleep(self.time)
         print("NodeContShutdown")

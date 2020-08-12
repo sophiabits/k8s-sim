@@ -27,11 +27,11 @@ class DepController:
                     for endpoint in self.apiServer.GetEndPointsByLabel(deployment.deploymentLabel):
                         pod = endpoint.pod
                         if pod.status == 'TERMINATING' and not pod.is_running():
-                            # Delete this pod
+                            # Delete this pod and its endpoint
                             print('[DepController] Deleting TERMINATING pod which has drained', pod.podName)
 
                             deployment.currentReplicas -= 1
-                            self.apiServer.etcd.runningPodList.remove(pod)
+                            self.apiServer.RemoveEndPoint(endpoint)
 
             time.sleep(self.time)
         print("DepContShutdown")

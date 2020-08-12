@@ -78,14 +78,13 @@ class APIServer:
         # Transition pod state to RUNNING
         pod.status = 'RUNNING'
 
+    # Removes the endpoint and its associated pod from the cluster
     def RemoveEndPoint(self, endpoint: EndPoint):
         endpoint.node.available_cpu += endpoint.pod.assigned_cpu
         self.etcd.endPointList.remove(endpoint)
 
-        # Transfer pod back to pendingPodList
+        # Remove pod from runningPodList
         self.etcd.runningPodList.remove(endpoint.pod)
-        self.etcd.pendingPodList.append(endpoint.pod)
-        endpoint.pod.status = 'PENDING'
 
     # CheckEndPoint checks that the associated pod is still present on the expected WorkerNode
     def CheckEndPoint(self, endpoint: EndPoint) -> bool:

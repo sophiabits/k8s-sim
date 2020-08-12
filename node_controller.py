@@ -27,6 +27,10 @@ class NodeController:
                         # Restart this pod (note: api name could be a lot better)
                         self.apiServer.RemoveEndPoint(endpoint)
 
+                        # Allow pod to be rescheduled by the scheduler
+                        endpoint.pod.status = 'PENDING'
+                        self.apiServer.etcd.pendingPodList.append(endpoint.pod)
+
                     # Do we need to handle status == 'TERMINATING'?
 
                     # if not self.apiServer.CheckEndPoint(endpoint):

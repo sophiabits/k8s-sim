@@ -7,3 +7,6 @@ class Request:
         self.request_id = INFOLIST[0]
         self.deploymentLabel = INFOLIST[1]
         self.execTime = int(INFOLIST[2])
+
+    def __repr__(self):
+        return f'<Request {self.request_id}>'

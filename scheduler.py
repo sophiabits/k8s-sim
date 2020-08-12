@@ -27,6 +27,7 @@ class Scheduler(threading.Thread):
                     for endpoint in endpoints:
                         if endpoint.pod is pod:
                             # Found the endpoint the pod is already on!
+                            print(f'[Scheduler] Restarting {endpoint}')
                             self.apiServer.StartPod(endpoint.pod)
                             break
                     else:

@@ -123,7 +123,7 @@ class APIServer:
         assert deployment.currentReplicas < deployment.expectedReplicas
 
         pod = Pod(f'{deployment.deploymentLabel}:{id_suffix}', deployment.cpuCost, deployment.deploymentLabel)
-        print('[APIServer] Created pod:', pod.podName)
+        print('[APIServer] Created pod:', pod)
         self.etcd.pendingPodList.append(pod)
         deployment.currentReplicas += 1
 
@@ -162,7 +162,7 @@ class APIServer:
                 #       ThreadPoolExecutor when the pod gets rescheduled. But then
                 #       we lose the "request crashed" message, so we need to track
                 #       pending request ids and... it's too much work rn
-                print('[APIServer] Crashing pod', pod.podName)
+                print('[APIServer] Crashing pod', pod)
                 pod.status = 'FAILED'
                 pod.crash.set()
                 break

@@ -22,7 +22,7 @@ class ReqHandler:
 
                 request_info = self.apiServer.etcd.pendingReqs.pop()
                 request = Request(request_info)
-                print('[ReqHandler] Got a request to service:', request.request_id)
+                print('[ReqHandler] Got a request to service:', request)
 
                 candidate_endpoints = list(filter(
                     lambda endpoint: self.apiServer.CheckEndPoint(endpoint),
@@ -38,7 +38,7 @@ class ReqHandler:
                 else:
                     # In reality, we'd probably put this request back onto the queue
                     # But Stephen has said it's OK to just fail the request when there isn't an available pod.
-                    print('[ReqHandler] Failed to find pod to service request', request.request_id)
+                    print('[ReqHandler] Failed to find pod to service request', request)
 
                 self.apiServer.requestWaiting.clear()
         print("ReqHandlerShutdown")

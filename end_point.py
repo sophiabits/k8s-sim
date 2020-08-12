@@ -12,3 +12,6 @@ class EndPoint:
         # Priority of the endpoint for request routing [0, 1]
         # Unused for this assignment.
         # self.flag = 0
+
+    def __repr__(self):
+        return f'<EndPoint {self.pod} <-> {self.node}>'

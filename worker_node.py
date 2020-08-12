@@ -10,3 +10,6 @@ class WorkerNode:
         self.assigned_cpu = int(INFOLIST[1])
         self.available_cpu = self.assigned_cpu
         self.status = 'UP'
+
+    def __repr__(self):
+        return f'<WorkerNode {self.label}>'

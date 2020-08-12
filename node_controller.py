@@ -25,7 +25,7 @@ class NodeController:
                     print('[NodeController]', endpoint.pod.podName, endpoint.pod.status)
                     if endpoint.pod.status == 'FAILED':
                         # Restart this pod by marking it as PENDING
-                        print(f'[NodeController] Marking failed pod as pending for rescheduling {endpoint.pod.podName}')
+                        print(f'[NodeController] Marking failed pod as pending for rescheduling {endpoint.pod}')
                         endpoint.pod.status = 'PENDING'
                         self.apiServer.etcd.runningPodList.remove(endpoint.pod)
                         self.apiServer.etcd.pendingPodList.append(endpoint.pod)

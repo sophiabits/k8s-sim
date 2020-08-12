@@ -23,8 +23,11 @@ class Pod:
 
         self._futures = []
 
+    def __repr__(self):
+        return f'<Pod {self.podName}>'
+
     def has_capacity(self):
-        print(f'[Pod] {self.podName} has capacity? {self.available_cpu > 0}')
+        print(f'[Pod] {self} has capacity? {self.available_cpu > 0}')
         return self.available_cpu > 0
 
     def is_running(self):
@@ -33,13 +36,13 @@ class Pod:
     def HandleRequest(self, request: Request):
         def handler():
             self.available_cpu -= 1
-            print('[Pod] servicing request:', request.request_id)
+            print(f'[Pod] servicing request: {request}')
             crashed = self.crash.wait(timeout=request.execTime)
             if crashed:
                 # TODO -- log that this request crashed
-                print('[Pod] Request crashed during handling!', self.podName, request.request_id)
+                print(f'[Pod] {self} request crashed during handling! {request}')
             else:
-                print('[Pod] finished request', self.podName, request.request_id)
+                print(f'[Pod] {self} finished request {request}')
 
             self.available_cpu += 1
 

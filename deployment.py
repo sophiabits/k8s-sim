@@ -11,3 +11,6 @@ class Deployment:
         self.currentReplicas = 0
         self.expectedReplicas = int(INFOLIST[1])
         self.cpuCost = int(INFOLIST[2])
+
+    def __repr__(self):
+        return f'<Deployment {self.deploymentLabel}'

@@ -2,6 +2,7 @@ import time
 
 from api_server import APIServer
 from pod import Pod
+from request import Request
 
 # reqHandler is a thread that continuously checks the pendingRequest queue and calls an associated pod to handle the incoming request.
 
@@ -19,7 +20,8 @@ class ReqHandler:
             with self.apiServer.etcdLock:
                 if not self.apiServer.etcd.pendingReqs: break
 
-                request = self.apiServer.etcd.pendingReqs.pop()
+                request_info = self.apiServer.etcd.pendingReqs.pop()
+                request = Request(request_info)
                 print('[ReqHandler] Got a request to service:', request.request_id)
 
                 candidate_endpoints = list(filter(

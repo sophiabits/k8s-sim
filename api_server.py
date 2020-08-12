@@ -6,7 +6,6 @@ from deployment import Deployment
 from end_point import EndPoint
 from etcd import Etcd
 from pod import Pod
-from request import Request
 from worker_node import WorkerNode
 
 # The APIServer handles the communication between controllers and the cluster. It houses
@@ -160,5 +159,5 @@ class APIServer:
     def reqHandle(self, info):
         # Note: Stephen has indicated reqHandle should make use of Request objects
         # created by etcd.
-        self.etcd.pendingReqs.append(Request(info))
+        self.etcd.pendingReqs.append(info)
         self.requestWaiting.set()

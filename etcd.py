@@ -19,7 +19,7 @@ class Etcd:
     pendingPodList: List[Pod]
     runningPodList: List[Pod]
 
-    pendingReqs: List[Request]
+    pendingReqs: List[dict]
     reqCreator: ThreadPoolExecutor
 
     def __init__(self):

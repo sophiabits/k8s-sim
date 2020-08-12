@@ -23,14 +23,20 @@ class NodeController:
 
                 for endpoint in self.apiServer.GetEndPoints():
                     print('[NodeController]', endpoint.deploymentLabel, endpoint.pod.status)
-                    if not self.apiServer.CheckEndPoint(endpoint):
-                        # Pod is not alive, so restart it
-                        # TODO -- does restarting mean we set status = 'PENDING' and move it to pendingPodList here?
-                        #      -- or does restarting just mean we let DepController handle it in its next loop (which is what I've done for now?)
-                        pod = endpoint.pod
-                        print('[NodeController] Restarting pod', pod.podName)
-                        self.apiServer.etcd.endPointList.remove(endpoint)
-                        self.apiServer.etcd.runningPodList.remove(pod)
+                    if endpoint.pod.status == 'FAILED':
+                        # Restart this pod (note: api name could be a lot better)
+                        self.apiServer.RemoveEndPoint(endpoint)
+
+                    # Do we need to handle status == 'TERMINATING'?
+
+                    # if not self.apiServer.CheckEndPoint(endpoint):
+                    #     # Pod is not alive, so restart it -- set statuus to PENDING and move to pendingPodList
+                    #     # TODO -- does restarting mean we set status = 'PENDING' and move it to pendingPodList here?
+                    #     #      -- or does restarting just mean we let DepController handle it in its next loop (which is what I've done for now?)
+                    #     pod = endpoint.pod
+                    #     print('[NodeController] Restarting pod', pod.podName)
+                    #     self.apiServer.etcd.endPointList.remove(endpoint)
+                    #     self.apiServer.etcd.runningPodList.remove(pod)
 
             time.sleep(self.time)
         print("NodeContShutdown")

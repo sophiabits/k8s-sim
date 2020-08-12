@@ -78,9 +78,18 @@ class APIServer:
         # Transition pod state to RUNNING
         pod.status = 'RUNNING'
 
+    def RemoveEndPoint(self, endpoint: EndPoint):
+        endpoint.node.available_cpu += endpoint.pod.available_cpu
+        self.etcd.endPointList.remove(endpoint)
+
+        # Transfer pod back to pendingPodList
+        self.etcd.runningPodList.remove(endpoint.pod)
+        self.etcd.pendingPodList.append(endpoint.pod)
+        endpoint.pod.status = 'PENDING'
+
     # CheckEndPoint checks that the associated pod is still present on the expected WorkerNode
-    def CheckEndPoint(self, endPoint: EndPoint) -> bool:
-        return endPoint.pod.status == 'RUNNING'
+    def CheckEndPoint(self, endpoint: EndPoint) -> bool:
+        return endpoint.pod.status == 'RUNNING'
 
     # GetEndPointsByLabel returns a list of EndPoints associated with a given deployment
     def GetEndPointsByLabel(self, deploymentLabel: str) -> List[EndPoint]:

@@ -53,7 +53,6 @@ class APIServer:
 
             print('[APIServer] .. flagging pod as TERMINATING', endpoint.pod.podName)
             self.TerminatePod(endpoint)
-            self.etcd.endPointList.remove(endpoint)
 
         for deployment in self.etcd.deploymentList:
             if deployment.deploymentLabel == deploymentLabel:
@@ -124,8 +123,9 @@ class APIServer:
     # TerminatePod finds the pod associated with a given EndPoint and sets it's status to 'TERMINATING'
     # No new requests will be sent to a pod marked 'TERMINATING'. Once its current requests have been handled,
     # it will be deleted by the Kubelet
-    def TerminatePod(self, endPoint: EndPoint):
-        endPoint.pod.status = 'TERMINATING'
+    def TerminatePod(self, endpoint: EndPoint):
+        endpoint.pod.status = 'TERMINATING'
+        self.etcd.endPointList.remove(endpoint)
 
     # CrashPod finds a pod from a given deployment and sets its status to 'FAILED'
     # Any resource utilisation on the pod will be reset to the base 0

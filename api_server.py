@@ -83,13 +83,7 @@ class APIServer:
         worker.available_cpu -= pod.assigned_cpu
 
         self.etcd.endPointList.append(endpoint)
-
-        # Transfer the pod pendingPodList -> runningPodList
-        self.etcd.pendingPodList.remove(pod)
-        self.etcd.runningPodList.append(pod)
-
-        # Transition pod state to RUNNING
-        pod.status = 'RUNNING'
+        self.StartPod(pod)
 
     # Removes the endpoint and its associated pod from the cluster
     def RemoveEndPoint(self, endpoint: EndPoint):
@@ -132,6 +126,13 @@ class APIServer:
         print('[APIServer] Created pod:', pod.podName)
         self.etcd.pendingPodList.append(pod)
         deployment.currentReplicas += 1
+
+    def StartPod(self, pod: Pod):
+        assert pod.status == 'PENDING'
+
+        self.etcd.pendingPodList.remove(pod)
+        self.etcd.runningPodList.append(pod)
+        pod.status = 'RUNNING'
 
     # # GetPod returns the pod object stored in the internal podList of a WorkerNode
     # def GetPod(self, endPoint):

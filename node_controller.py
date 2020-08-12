@@ -22,15 +22,12 @@ class NodeController:
 
                 # Restart failed pods
                 for endpoint in self.apiServer.GetEndPoints():
-                    print('[NodeController]', endpoint.deploymentLabel, endpoint.pod.status)
+                    print('[NodeController]', endpoint.pod.podName, endpoint.pod.status)
                     if endpoint.pod.status == 'FAILED':
-                        # Restart this pod (note: api name could be a lot better)
-                        # TODO -- does the pod need to stay on the same node? probably.
-                        self.apiServer.RemoveEndPoint(endpoint)
-
-                        # Allow pod to be rescheduled by the scheduler
-                        print('[NodeController] Marking failed pod as pending for rescheduling', endpoint.pod.podName)
+                        # Restart this pod by marking it as PENDING
+                        print(f'[NodeController] Marking failed pod as pending for rescheduling {endpoint.pod.podName}')
                         endpoint.pod.status = 'PENDING'
+                        self.apiServer.etcd.runningPodList.remove(endpoint.pod)
                         self.apiServer.etcd.pendingPodList.append(endpoint.pod)
 
             time.sleep(self.time)

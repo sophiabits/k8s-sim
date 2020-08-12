@@ -22,18 +22,26 @@ class Scheduler(threading.Thread):
                 for pod in self.apiServer.GetPending():
                     assert pod.status == 'PENDING'
 
-                    # Try to find a suitable node for this pod
-                    for node in self.apiServer.GetWorkers():
-                        if node.available_cpu < pod.assigned_cpu:
-                            # Not enough cpu on this node for this pod
-                            continue
+                    # A PENDING pod can already be assigned to a node if it was crashed
+                    endpoints = self.apiServer.GetEndPointsByLabel(pod.deploymentLabel)
+                    for endpoint in endpoints:
+                        if endpoint.pod is pod:
+                            # Found the endpoint the pod is already on!
+                            self.apiServer.StartPod(endpoint.pod)
+                            break
+                    else:
+                        # Try to find a suitable node for this pod
+                        for node in self.apiServer.GetWorkers():
+                            if node.available_cpu < pod.assigned_cpu:
+                                # Not enough cpu on this node for this pod
+                                continue
 
-                        # We found a suitable node
-                        print(f'[Scheduler] Assigning pod {pod.podName} to worker {node.label}')
-                        self.apiServer.CreateEndPoint(pod, node)
+                            # We found a suitable node
+                            print(f'[Scheduler] Assigning pod {pod} to worker {node}')
+                            self.apiServer.CreateEndPoint(pod, node)
 
-                        # Only need to assign the pod once
-                        break
+                            # Only need to assign the pod once
+                            break
 
             time.sleep(self.time)
         print("SchedShutdown")

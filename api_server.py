@@ -66,8 +66,8 @@ class APIServer:
     def CreateEndPoint(self, pod: Pod, worker: WorkerNode):
         endpoint = EndPoint(pod, pod.deploymentLabel, worker)
 
-        assert worker.available_cpu >= pod.available_cpu
-        worker.available_cpu -= pod.available_cpu
+        assert worker.available_cpu >= pod.assigned_cpu
+        worker.available_cpu -= pod.assigned_cpu
 
         self.etcd.endPointList.append(endpoint)
 
@@ -79,7 +79,7 @@ class APIServer:
         pod.status = 'RUNNING'
 
     def RemoveEndPoint(self, endpoint: EndPoint):
-        endpoint.node.available_cpu += endpoint.pod.available_cpu
+        endpoint.node.available_cpu += endpoint.pod.assigned_cpu
         self.etcd.endPointList.remove(endpoint)
 
         # Transfer pod back to pendingPodList

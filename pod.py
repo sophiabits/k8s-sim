@@ -14,25 +14,25 @@ from request import Request
 class Pod:
     def __init__(self, NAME, ASSIGNED_CPU, DEPLABEL):
         self.podName = NAME
-        self.available_cpu = ASSIGNED_CPU
+        self.assigned_cpu = ASSIGNED_CPU
+        self.available_cpu = ASSIGNED_CPU # THIS NEEDS TO BE MODIFIED WHEN THREADS ARE RUNNING
         self.deploymentLabel = DEPLABEL
         self.status = 'PENDING'
         self.crash = threading.Event()
         self.pool = ThreadPoolExecutor(max_workers=ASSIGNED_CPU)
 
         self._futures = []
-        self.threads_running = 0
 
     def has_capacity(self):
-        print(f'[Pod] {self.podName} is checking capacity {self.threads_running}/{self.available_cpu}')
-        return self.threads_running < self.available_cpu
+        print(f'[Pod] {self.podName} is checking capacity {self.available_cpu}')
+        return self.available_cpu > 0
 
     def is_running(self):
         return all([f.done() for f in self._futures])
 
     def HandleRequest(self, request: Request):
         def handler():
-            self.threads_running += 1
+            self.available_cpu -= 1
             print('[Pod] servicing request:', request.request_id)
             crashed = self.crash.wait(timeout=request.execTime)
             if crashed:
@@ -41,6 +41,6 @@ class Pod:
             else:
                 print('[Pod] finished request', self.podName, request.request_id)
 
-            self.threads_running -= 1
+            self.available_cpu += 1
 
         self._futures.append(self.pool.submit(handler))

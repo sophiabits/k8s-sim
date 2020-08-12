@@ -24,7 +24,7 @@ class Scheduler(threading.Thread):
 
                     # Try to find a suitable node for this pod
                     for node in self.apiServer.GetWorkers():
-                        if node.available_cpu < pod.available_cpu:
+                        if node.available_cpu < pod.assigned_cpu:
                             # Not enough cpu on this node for this pod
                             continue
 

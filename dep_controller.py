@@ -40,7 +40,7 @@ class DepController:
                     # Special case: expected and current replicas are 0 -- deployment needs to be deleted
                     if deployment.currentReplicas == 0 and deployment.expectedReplicas == 0:
                         print('[DepController] Deleting deployment', deployment.deploymentLabel)
-                        self.apiServer.RemoveDeployment(deploymentLabel=deployment.deploymentLabel)
+                        self.apiServer.etcd.deploymentList.remove(deployment)
 
             time.sleep(self.time)
         print("DepContShutdown")

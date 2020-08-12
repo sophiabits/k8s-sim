@@ -35,7 +35,12 @@ class DepController:
                     elif deployment.currentReplicas > deployment.expectedReplicas:
                         endpoints = self.apiServer.GetEndPointsByLabel(deployment.deploymentLabel)
                         for endpoint in endpoints:
-                            self.apiServer.RemoveEndPoint(endpoint)
+                            self.apiServer.TerminatePod(endpoint)
+
+                    # Special case: expected and current replicas are 0 -- deployment needs to be deleted
+                    if deployment.currentReplicas == 0 and deployment.expectedReplicas == 0:
+                        print('[DepController] Deleting deployment', deployment.deploymentLabel)
+                        self.apiServer.RemoveDeployment(deploymentLabel=deployment.deploymentLabel)
 
             time.sleep(self.time)
         print("DepContShutdown")

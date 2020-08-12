@@ -45,19 +45,27 @@ class APIServer:
 
     # RemoveDeployment deletes the associated Deployment object from etcd and sets the status of all associated pods to 'TERMINATING'
     def RemoveDeployment(self, deploymentLabel: str):
-        endpoints = self.GetEndPointsByLabel(deploymentLabel)
+        # endpoints = self.GetEndPointsByLabel(deploymentLabel)
 
-        print('[APIServer] Deleting deployment', deploymentLabel)
-        for endpoint in endpoints:
-            # Mark the pod as TERMINATING
+        # print('[APIServer] Deleting deployment', deploymentLabel)
+        # for endpoint in endpoints:
+        #     # Mark the pod as TERMINATING
 
-            print('[APIServer] .. flagging pod as TERMINATING', endpoint.pod.podName)
-            self.TerminatePod(endpoint)
+        #     print('[APIServer] .. flagging pod as TERMINATING', endpoint.pod.podName)
+        #     self.TerminatePod(endpoint)
+        print('[APIServer] Marking deployment for termination', deploymentLabel)
 
         for deployment in self.etcd.deploymentList:
             if deployment.deploymentLabel == deploymentLabel:
-                self.etcd.deploymentList.remove(deployment)
+                # XXX: Spec says this method should remove the deployment from etcd,
+                #      but on Moodle Stephen has recommended implementing this by setting
+                #      expectedReplicas to 0, and then having the DepController manage
+                #      deletion of the associated pods.
+                deployment.expectedReplicas = 0
+                # self.etcd.deploymentList.remove(deployment)
                 break
+        else:
+            print('[APIServer] .. but could not find it!')
 
     # CreateEndpoint creates an EndPoint object using information from a provided Pod and Node and appends it
     # to the endPointList in etcd
@@ -78,6 +86,8 @@ class APIServer:
 
     # Removes the endpoint and its associated pod from the cluster
     def RemoveEndPoint(self, endpoint: EndPoint):
+        assert not endpoint.pod.is_running()
+
         endpoint.node.available_cpu += endpoint.pod.assigned_cpu
         self.etcd.endPointList.remove(endpoint)
 

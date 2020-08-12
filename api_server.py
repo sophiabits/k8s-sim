@@ -136,11 +136,17 @@ class APIServer:
             print('[APIServer] Failed to find pod for deployment to crash:', deploymentLabel)
             return
 
-        # Crash the first endpoint in the list
-        pod = endpoints[0].pod
-        print('[APIServer] Crashing pod', pod.podName)
-        pod.status = 'FAILED'
-        pod.crash.set()
+        # Crash the first runnind pod
+        for endpoint in endpoints:
+            if endpoint.pod.status == 'RUNNING':
+                pod = endpoint.pod
+
+                print('[APIServer] Crashing pod', pod.podName)
+                pod.status = 'FAILED'
+                pod.crash.set()
+                break
+        else:
+            print('[APIServer] Failed to find a suitable pod to crash!', deploymentLabel)
 
     # AssignNode takes a pod in the pendingPodList and transfers it to the internal podList of a specified WorkerNode
     def AssignNode(self, pod, worker):

@@ -25,6 +25,7 @@ class NodeController:
                     print('[NodeController]', endpoint.deploymentLabel, endpoint.pod.status)
                     if endpoint.pod.status == 'FAILED':
                         # Restart this pod (note: api name could be a lot better)
+                        # TODO -- does the pod need to stay on the same node? probably.
                         self.apiServer.RemoveEndPoint(endpoint)
 
                         # Allow pod to be rescheduled by the scheduler

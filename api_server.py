@@ -86,6 +86,13 @@ class APIServer:
         # Remove pod from runningPodList
         self.etcd.runningPodList.remove(endpoint.pod)
 
+        for deployment in self.etcd.deploymentList:
+            if deployment.deploymentLabel == endpoint.deploymentLabel:
+                deployment.currentReplicas -= 1
+                break
+        else:
+            print('[APIServer] Failed to find deployment associated with endpoint!', endpoint)
+
     # CheckEndPoint checks that the associated pod is still present on the expected WorkerNode
     def CheckEndPoint(self, endpoint: EndPoint) -> bool:
         return endpoint.pod.status == 'RUNNING'

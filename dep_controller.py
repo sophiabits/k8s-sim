@@ -18,19 +18,23 @@ class DepController:
         while self.running:
             with self.apiServer.etcdLock:
                 for deployment in self.apiServer.GetDeployments():
-                    pods_to_create = deployment.expectedReplicas - deployment.currentReplicas
-
-                    for _ in range(0, pods_to_create):
-                        # Create pods as needed in order to reach expectedReplicas
-                        self.apiServer.CreatePod(deployment)
-
+                    # First: Delete any pods which need to be terminated
                     for endpoint in self.apiServer.GetEndPointsByLabel(deployment.deploymentLabel):
                         pod = endpoint.pod
                         if pod.status == 'TERMINATING' and not pod.is_running():
                             # Delete this pod and its endpoint
                             print('[DepController] Deleting TERMINATING pod which has drained', pod.podName)
+                            self.apiServer.RemoveEndPoint(endpoint)
 
-                            deployment.currentReplicas -= 1
+                    # Now we can attempt to create or delete pods in order to reach expectedReplicas
+
+                    if deployment.currentReplicas < deployment.expectedReplicas:
+                        pods_needed = deployment.expectedReplicas - deployment.currentReplicas
+                        for _ in range(0, pods_needed):
+                            self.apiServer.CreatePod(deployment)
+                    elif deployment.currentReplicas > deployment.expectedReplicas:
+                        endpoints = self.apiServer.GetEndPointsByLabel(deployment.deploymentLabel)
+                        for endpoint in endpoints:
                             self.apiServer.RemoveEndPoint(endpoint)
 
             time.sleep(self.time)

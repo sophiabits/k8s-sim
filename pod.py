@@ -24,11 +24,11 @@ class Pod:
         self._futures = []
 
     def has_capacity(self):
-        print(f'[Pod] {self.podName} is checking capacity {self.available_cpu}')
+        print(f'[Pod] {self.podName} has capacity? {self.available_cpu > 0}')
         return self.available_cpu > 0
 
     def is_running(self):
-        return all([f.done() for f in self._futures])
+        return not all([f.done() for f in self._futures])
 
     def HandleRequest(self, request: Request):
         def handler():

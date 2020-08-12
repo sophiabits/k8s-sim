@@ -34,7 +34,8 @@ class ReqHandler:
                         pod.HandleRequest(request)
                         break
                 else:
-                    # TODO -- chuck this request onto the first endpoint (if there is one)
+                    # In reality, we'd probably put this request back onto the queue
+                    # But Stephen has said it's OK to just fail the request when there isn't an available pod.
                     print('[ReqHandler] Failed to find pod to service request', request.request_id)
 
                 self.apiServer.requestWaiting.clear()

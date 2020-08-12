@@ -17,21 +17,21 @@ class APIServer:
         self.etcdLock = threading.Lock()
         self.requestWaiting = threading.Event()
 
-    # GetDeployments method returns the list of deployments stored in etcd
-    def GetDeployments(self):
-        return self.etcd.deploymentList
+    def GetDeployments(self) -> List[Deployment]:
+        ''' Returns the list of deployments stored in etcd. '''
+        return [*self.etcd.deploymentList]
 
-    # GetWorkers method returns the list of WorkerNodes stored in etcd
-    def GetWorkers(self):
-        return self.etcd.nodeList
+    def GetWorkers(self) -> List[WorkerNode]:
+        ''' Returns the list of WorkerNodes stored in etcd. '''
+        return [*self.etcd.nodeList]
 
-    # GetPending method returns the list of PendingPods stored in etcd
-    def GetPending(self):
-        return self.etcd.pendingPodList
+    def GetPending(self) -> List[Pod]:
+        ''' Returns the list of pending pods stored in etcd. '''
+        return [*self.etcd.pendingPodList]
 
-    # GetEndPoints method returns the list of EndPoints stored in etcd
-    def GetEndPoints(self):
-        return self.etcd.endPointList
+    def GetEndPoints(self) -> List[EndPoint]:
+        ''' Returns the list of endpoints stored in etcd. '''
+        return [*self.etcd.endPointList]
 
     # CreateWorker creates a WorkerNode from a list of arguments and adds it to the etcd nodeList
     def CreateWorker(self, info):
@@ -61,8 +61,15 @@ class APIServer:
                 #      but on Moodle Stephen has recommended implementing this by setting
                 #      expectedReplicas to 0, and then having the DepController manage
                 #      deletion of the associated pods.
-                deployment.expectedReplicas = 0
-                # self.etcd.deploymentList.remove(deployment)
+
+                # XXX: Stephen has indicated it could be a good idea to set expectedReplicas to 0
+                #      here and then just leave deletion of pods to DepController. The issue with
+                #      that approach is that the Scheduler could run before DepController, resulting
+                #      in a request being routed to a Pod which is going to get shut down on the
+                #      next invocation of DepController. Does that matter? Probably not... but it
+                # deployment.expectedReplicas = 0
+
+                self.etcd.deploymentList.remove(deployment)
                 break
         else:
             print('[APIServer] .. but could not find it!')
@@ -150,6 +157,10 @@ class APIServer:
             if endpoint.pod.status == 'RUNNING':
                 pod = endpoint.pod
 
+                # NOTE: Should probably call pool.shutdown and then make a new
+                #       ThreadPoolExecutor when the pod gets rescheduled. But then
+                #       we lose the "request crashed" message, so we need to track
+                #       pending request ids and... it's too much work rn
                 print('[APIServer] Crashing pod', pod.podName)
                 pod.status = 'FAILED'
                 pod.crash.set()

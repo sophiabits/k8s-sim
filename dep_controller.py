@@ -2,6 +2,7 @@ import threading
 import time
 
 from api_server import APIServer
+import metrics
 
 # DepController is a control loop that creates and terminates Pod objects based on
 # the expected number of replicas.
@@ -23,7 +24,7 @@ class DepController:
                         pod = endpoint.pod
                         if pod.status == 'TERMINATING' and not pod.is_running():
                             # Delete this pod and its endpoint
-                            print('[DepController] Deleting TERMINATING pod which has drained', pod)
+                            # print('[DepController] Deleting TERMINATING pod which has drained', pod)
                             self.apiServer.RemoveEndPoint(endpoint)
 
                     # Now we can attempt to create or delete pods in order to reach expectedReplicas
@@ -39,8 +40,8 @@ class DepController:
 
                     # Special case: expected and current replicas are 0 -- deployment needs to be deleted
                     if deployment.currentReplicas == 0 and deployment.expectedReplicas == 0:
-                        print('[DepController] Deleting deployment', deployment)
                         self.apiServer.etcd.deploymentList.remove(deployment)
+                        metrics.deployment_deleted(deployment)
 
             time.sleep(self.time)
         print("DepContShutdown")

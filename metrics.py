@@ -49,9 +49,24 @@ def dump(output_file='metrics.json'):
         fp.write(json.dumps(_records, indent=2, separators=(',', ': ')))
 
 
+# Deployment lifecycle
+#   created --> replicas --> request_deletion --> deleted
+#                ^----/
 def deployment_created(deployment):
     _push('deployment', 'created', deployment.deploymentLabel, {
         'current': 0,
+        'expected': deployment.expectedReplicas,
+    })
+
+def deployment_deleted(deployment):
+    _push('deployment', 'deleted', deployment.deploymentLabel, {
+        'current': deployment.currentReplicas,
+        'expected': deployment.expectedReplicas,
+    })
+
+def deployment_request_deletion(deployment):
+    _push('deployment', 'request_deletion', deployment.deploymentLabel, {
+        'current': deployment.currentReplicas,
         'expected': deployment.expectedReplicas,
     })
 
@@ -61,6 +76,9 @@ def deployment_replicas(deployment):
         'expected': deployment.expectedReplicas,
     })
 
+
+def node_created(node):
+    _push('node', 'created', node.label)
 
 def node_cpu(node):
     _push('node', 'cpu', node.label, {
@@ -85,6 +103,14 @@ def pod_started(pod):
 def pod_status(pod):
     _push('pod', 'status', pod.podName, { 'status': pod.status })
 
+
+# Request lifecycle
+#    created -> routed------>started-->success
+#          |         |             |
+#          |         |---------------->failed
+#          |--> not_routed
+def request_created(request_id):
+    _push('request', 'created', request_id)
 
 def request_failed(pod, request):
     _push('request', 'failed', request.request_id, {

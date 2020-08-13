@@ -13,4 +13,4 @@ class Deployment:
         self.cpuCost = int(INFOLIST[2])
 
     def __repr__(self):
-        return f'<Deployment {self.deploymentLabel}'
+        return f'<Deployment {self.deploymentLabel}>'

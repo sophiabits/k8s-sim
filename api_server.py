@@ -40,6 +40,8 @@ class APIServer:
         node = WorkerNode(info)
         self.etcd.nodeList.append(node)
 
+        metrics.node_created(node)
+
     # CreateDeployment creates a Deployment object from a list of arguments and adds it to the etcd deploymentList
     def CreateDeployment(self, info):
         deployment = Deployment(info)
@@ -49,33 +51,15 @@ class APIServer:
 
     # RemoveDeployment deletes the associated Deployment object from etcd and sets the status of all associated pods to 'TERMINATING'
     def RemoveDeployment(self, deploymentLabel: str):
-        # endpoints = self.GetEndPointsByLabel(deploymentLabel)
-
-        # print('[APIServer] Deleting deployment', deploymentLabel)
-        # for endpoint in endpoints:
-        #     # Mark the pod as TERMINATING
-
-        #     print('[APIServer] .. flagging pod as TERMINATING', endpoint.pod.podName)
-        #     self.TerminatePod(endpoint)
-
-        # TODO
-        print('[APIServer] Marking deployment for termination', deploymentLabel)
-
         for deployment in self.etcd.deploymentList:
             if deployment.deploymentLabel == deploymentLabel:
-                # XXX: Spec says this method should remove the deployment from etcd,
-                #      but on Moodle Stephen has recommended implementing this by setting
-                #      expectedReplicas to 0, and then having the DepController manage
-                #      deletion of the associated pods.
-
                 # XXX: Stephen has indicated it could be a good idea to set expectedReplicas to 0
-                #      here and then just leave deletion of pods to DepController. The issue with
-                #      that approach is that the Scheduler could run before DepController, resulting
-                #      in a request being routed to a Pod which is going to get shut down on the
-                #      next invocation of DepController. Does that matter? Probably not... but it
-                # deployment.expectedReplicas = 0
-
-                self.etcd.deploymentList.remove(deployment)
+                #      here and then just leave deletion of pods to DepController. Potentially we wind up
+                #      with the Scheduler running before DepController, resulting in a request being routed
+                #      to a Pod which is going to get shut down on the next invocation of DepController.
+                #      Does that matter? Probably not
+                deployment.expectedReplicas = 0
+                metrics.deployment_request_deletion(deployment)
                 break
         else:
             print('[APIServer] .. but could not find it!')
@@ -133,7 +117,6 @@ class APIServer:
         assert deployment.currentReplicas < deployment.expectedReplicas
 
         pod = Pod(f'{deployment.deploymentLabel}/{id_suffix}', deployment.cpuCost, deployment.deploymentLabel)
-        # print('[APIServer] Created pod:', pod)
         self.etcd.pendingPodList.append(pod)
         deployment.currentReplicas += 1
 
@@ -185,12 +168,9 @@ class APIServer:
         else:
             print('[APIServer] Failed to find a suitable pod to crash!', deploymentLabel)
 
-    # AssignNode takes a pod in the pendingPodList and transfers it to the internal podList of a specified WorkerNode
-    def AssignNode(self, pod, worker):
-        pass
-
     # PushReq adds the incoming request to the handling queue
     def PushReq(self, info):
+        metrics.request_created(info[0])
         self.etcd.reqCreator.submit(self.reqHandle, info)
 
     # Creates requests and notifies the handler of request to be dealt with

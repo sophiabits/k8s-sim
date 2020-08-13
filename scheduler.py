@@ -27,7 +27,7 @@ class Scheduler(threading.Thread):
                     for endpoint in endpoints:
                         if endpoint.pod is pod:
                             # Found the endpoint the pod is already on!
-                            print(f'[Scheduler] Restarting {endpoint}')
+                            # print(f'[Scheduler] Restarting {endpoint}')
                             self.apiServer.StartPod(endpoint.pod)
                             break
                     else:
@@ -38,7 +38,7 @@ class Scheduler(threading.Thread):
                                 continue
 
                             # We found a suitable node
-                            print(f'[Scheduler] Assigning pod {pod} to worker {node}')
+                            # print(f'[Scheduler] Assigning pod {pod} to worker {node}')
                             self.apiServer.CreateEndPoint(pod, node)
 
                             # Only need to assign the pod once

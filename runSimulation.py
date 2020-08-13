@@ -1,6 +1,7 @@
 import threading
 import time
 
+import metrics
 from request import Request
 from dep_controller import DepController
 from api_server import APIServer
@@ -20,10 +21,10 @@ depController = DepController(apiServer, _depCtlLoop)
 nodeController = NodeController(apiServer, _nodeCtlLoop)
 reqHandler = ReqHandler(apiServer)
 scheduler = Scheduler(apiServer, _scheduleCtlLoop)
-depControllerThread = threading.Thread(target=depController)
-nodeControllerThread = threading.Thread(target=nodeController)
-reqHandlerThread = threading.Thread(target=reqHandler)
-schedulerThread = threading.Thread(target=scheduler)
+depControllerThread = threading.Thread(name='DeploymentController', target=depController)
+nodeControllerThread = threading.Thread(name='NodeController', target=nodeController)
+reqHandlerThread = threading.Thread(name='RequestHandler', target=reqHandler)
+schedulerThread = threading.Thread(name='Scheduler', target=scheduler)
 print('Threads Starting')
 reqHandlerThread.start()
 nodeControllerThread.start()
@@ -66,3 +67,6 @@ depControllerThread.join()
 schedulerThread.join()
 nodeControllerThread.join()
 reqHandlerThread.join()
+
+print('Recording metrics...')
+metrics.dump()

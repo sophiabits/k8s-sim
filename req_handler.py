@@ -1,6 +1,7 @@
 import time
 
 from api_server import APIServer
+import metrics
 from pod import Pod
 from request import Request
 
@@ -22,6 +23,7 @@ class ReqHandler:
 
                 request_info = self.apiServer.etcd.pendingReqs.pop()
                 request = Request(request_info)
+                # print('[ReqHandler] Got a request to service:', request)
 
                 candidate_endpoints = list(filter(
                     lambda endpoint: self.apiServer.CheckEndPoint(endpoint),
@@ -31,17 +33,21 @@ class ReqHandler:
                 if not candidate_endpoints:
                     # In reality, we'd probably put this request back onto the queue
                     # But Stephen has said it's OK to just fail the request when there isn't an available pod.
-                    print('[ReqHandler] Failed to find pod to service request', request)
+                    metrics.request_not_routed(request)
+                    # print('[ReqHandler] Failed to find pod to service request', request)
                 else:
                     for endpoint in candidate_endpoints:
                         # First try to find a pod which can service the request immediately
                         pod: Pod = endpoint.pod
                         if pod.has_capacity():
+                            metrics.request_routed(pod, request)
                             pod.HandleRequest(request)
                             break
                     else:
                         # No pods can service the request immediately, so just chuck it on the first pod
                         pod = candidate_endpoints[0].pod
+                        metrics.request_routed(pod, request)
+
                         pod.HandleRequest(request)
 
                 self.apiServer.requestWaiting.clear()

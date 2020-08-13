@@ -2,6 +2,7 @@ import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 import threading
 
+import metrics
 from request import Request
 
 # The Pod is the unit of scaling within Kubernetes. It encapsulates the running containerized application
@@ -27,7 +28,7 @@ class Pod:
         return f'<Pod {self.podName}>'
 
     def has_capacity(self):
-        print(f'[Pod] {self} has capacity? {self.available_cpu > 0}')
+        # print(f'[Pod] {self} has capacity? {self.available_cpu > 0}')
         return self.available_cpu > 0
 
     def is_running(self):
@@ -36,14 +37,19 @@ class Pod:
     def HandleRequest(self, request: Request):
         def handler():
             self.available_cpu -= 1
-            print(f'[Pod] servicing request: {request}')
+            # print(f'[Pod] servicing request: {request}')
+            metrics.request_started(self, request)
+
             crashed = self.crash.wait(timeout=request.execTime)
-            if crashed:
-                # TODO -- log that this request crashed
-                print(f'[Pod] {self} request crashed during handling! {request}')
-            else:
-                print(f'[Pod] {self} finished request {request}')
 
             self.available_cpu += 1
+
+            if crashed:
+                # TODO -- log that this request crashed
+                metrics.request_failed(self, request)
+                # print(f'[Pod] {self} request crashed during handling! {request}')
+            else:
+                metrics.request_success(self, request)
+                # print(f'[Pod] {self} finished request {request}')
 
         self._futures.append(self.pool.submit(handler))

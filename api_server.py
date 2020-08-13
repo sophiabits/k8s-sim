@@ -2,6 +2,8 @@ import threading
 from typing import List
 import uuid
 
+import metrics
+
 from deployment import Deployment
 from end_point import EndPoint
 from etcd import Etcd
@@ -43,6 +45,8 @@ class APIServer:
         deployment = Deployment(info)
         self.etcd.deploymentList.append(deployment)
 
+        metrics.deployment_created(deployment)
+
     # RemoveDeployment deletes the associated Deployment object from etcd and sets the status of all associated pods to 'TERMINATING'
     def RemoveDeployment(self, deploymentLabel: str):
         # endpoints = self.GetEndPointsByLabel(deploymentLabel)
@@ -53,6 +57,8 @@ class APIServer:
 
         #     print('[APIServer] .. flagging pod as TERMINATING', endpoint.pod.podName)
         #     self.TerminatePod(endpoint)
+
+        # TODO
         print('[APIServer] Marking deployment for termination', deploymentLabel)
 
         for deployment in self.etcd.deploymentList:
@@ -81,6 +87,7 @@ class APIServer:
 
         assert worker.available_cpu >= pod.assigned_cpu
         worker.available_cpu -= pod.assigned_cpu
+        metrics.node_cpu(worker)
 
         self.etcd.endPointList.append(endpoint)
         self.StartPod(pod)
@@ -91,6 +98,7 @@ class APIServer:
 
         endpoint.node.available_cpu += endpoint.pod.assigned_cpu
         self.etcd.endPointList.remove(endpoint)
+        metrics.node_cpu(endpoint.node)
 
         # Remove pod from runningPodList
         self.etcd.runningPodList.remove(endpoint.pod)
@@ -98,6 +106,8 @@ class APIServer:
         for deployment in self.etcd.deploymentList:
             if deployment.deploymentLabel == endpoint.deploymentLabel:
                 deployment.currentReplicas -= 1
+                # TODO record pod got moved from running pod list?
+                metrics.deployment_replicas(deployment)
                 break
         else:
             print('[APIServer] Failed to find deployment associated with endpoint!', endpoint)
@@ -122,17 +132,23 @@ class APIServer:
         # TODO -- do we adjust currentReplicas now? or only when a pod transitions status from PENDING -> RUNNING?
         assert deployment.currentReplicas < deployment.expectedReplicas
 
-        pod = Pod(f'{deployment.deploymentLabel}:{id_suffix}', deployment.cpuCost, deployment.deploymentLabel)
-        print('[APIServer] Created pod:', pod)
+        pod = Pod(f'{deployment.deploymentLabel}/{id_suffix}', deployment.cpuCost, deployment.deploymentLabel)
+        # print('[APIServer] Created pod:', pod)
         self.etcd.pendingPodList.append(pod)
         deployment.currentReplicas += 1
+
+        metrics.pod_created(pod)
+        metrics.deployment_replicas(deployment)
 
     def StartPod(self, pod: Pod):
         assert pod.status == 'PENDING'
 
         self.etcd.pendingPodList.remove(pod)
         self.etcd.runningPodList.append(pod)
+        pod.crash.clear()
         pod.status = 'RUNNING'
+
+        metrics.pod_started(pod)
 
     # # GetPod returns the pod object stored in the internal podList of a WorkerNode
     # def GetPod(self, endPoint):
@@ -161,7 +177,8 @@ class APIServer:
                 #       ThreadPoolExecutor when the pod gets rescheduled. But then
                 #       we lose the "request crashed" message, so we need to track
                 #       pending request ids and... it's too much work rn
-                print('[APIServer] Crashing pod', pod)
+
+                metrics.pod_crashed(pod)
                 pod.status = 'FAILED'
                 pod.crash.set()
                 break

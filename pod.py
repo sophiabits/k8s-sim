@@ -36,20 +36,15 @@ class Pod:
 
     def HandleRequest(self, request: Request):
         def handler():
-            self.available_cpu -= 1
-            # print(f'[Pod] servicing request: {request}')
             metrics.request_started(self, request)
 
+            self.available_cpu -= 1
             crashed = self.crash.wait(timeout=request.execTime)
-
             self.available_cpu += 1
 
             if crashed:
-                # TODO -- log that this request crashed
                 metrics.request_failed(self, request)
-                # print(f'[Pod] {self} request crashed during handling! {request}')
             else:
                 metrics.request_success(self, request)
-                # print(f'[Pod] {self} finished request {request}')
 
         self._futures.append(self.pool.submit(handler))

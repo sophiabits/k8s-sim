@@ -4,19 +4,6 @@ import json
 import math
 import threading
 
-# { current: 0, expected: int }
-EVT_DEPLOYMENT_REMOVED = 'deployment_removed'
-
-EVT_NODE_CPU_USAGE = 'node_cpu_usage'
-EVT_NODE_ADDED = 'node_added'
-
-EVT_POD_CRASHED = 'pod_crashed'
-EVT_POD_THREAD_USAGE = 'pod_thread_usage'
-
-# { pod: string }
-EVT_REQUEST_FAILED = 'request_failed'
-EVT_REQUEST_SUCCESS = 'request_success'
-
 _records = []
 _START_TIME = datetime.now()
 

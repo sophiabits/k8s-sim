@@ -143,7 +143,6 @@ class APIServer:
     # it will be deleted by the Kubelet
     def TerminatePod(self, endpoint: EndPoint):
         endpoint.pod.status = 'TERMINATING'
-        self.etcd.endPointList.remove(endpoint)
 
     # CrashPod finds a pod from a given deployment and sets its status to 'FAILED'
     # Any resource utilisation on the pod will be reset to the base 0

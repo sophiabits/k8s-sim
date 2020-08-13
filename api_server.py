@@ -138,9 +138,13 @@ class APIServer:
     #     pass
 
     # TerminatePod finds the pod associated with a given EndPoint and sets it's status to 'TERMINATING'
-    # No new requests will be sent to a pod marked 'TERMINATING'. Once its current requests have been handled,
-    # it will be deleted by the Kubelet
+    # No new requests will be sent to a pod marked 'TERMINATING'.
     def TerminatePod(self, endpoint: EndPoint):
+        if endpoint.pod.status == 'PENDING':
+            # See Section 6 of the report for a discussion about this strange-looking code.
+            self.etcd.pendingPodList.remove(endpoint.pod)
+            self.etcd.runningPodList.append(endpoint.pod)
+
         endpoint.pod.status = 'TERMINATING'
 
     # CrashPod finds a pod from a given deployment and sets its status to 'FAILED'

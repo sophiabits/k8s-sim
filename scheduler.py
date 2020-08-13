@@ -43,6 +43,8 @@ class Scheduler(threading.Thread):
 
                             # Only need to assign the pod once
                             break
+                        else:
+                            print("FAILED TO SCHEDULE POD", pod)
 
             time.sleep(self.time)
         print("SchedShutdown")

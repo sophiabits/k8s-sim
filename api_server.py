@@ -85,6 +85,7 @@ class APIServer:
         metrics.node_cpu(endpoint.node)
 
         # Remove pod from runningPodList
+        metrics.pod_terminated(endpoint.pod)
         self.etcd.runningPodList.remove(endpoint.pod)
 
         for deployment in self.etcd.deploymentList:
@@ -145,6 +146,7 @@ class APIServer:
             self.etcd.pendingPodList.remove(endpoint.pod)
             self.etcd.runningPodList.append(endpoint.pod)
 
+        metrics.pod_terminating(endpoint.pod)
         endpoint.pod.status = 'TERMINATING'
 
     # CrashPod finds a pod from a given deployment and sets its status to 'FAILED'

@@ -31,7 +31,7 @@ def _push(category, event, id, data=_empty_data):
     print(f'[t={t}\t] {category}.{event} @ {id}{stringified_data}')
 
 
-def dump(output_file='metrics.json'):
+def dump(output_file):
     with open(output_file, 'w') as fp:
         fp.write(json.dumps(_records, indent=2, separators=(',', ': ')))
 
@@ -75,20 +75,30 @@ def node_cpu(node):
 
 
 def pod_crashed(pod):
-    _push('pod', 'crashed', pod.podName)
+    _push('pod', 'crashed', pod.podName, { 'old_status': pod.status })
 
 def pod_created(pod):
     _push('pod', 'created', pod.podName)
 
 def pod_restart(pod):
     # Crashed pod transitioned back to PENDING
-    _push('pod', 'restart', pod.podName)
+    _push('pod', 'restart', pod.podName, { 'old_status': pod.status })
 
-def pod_started(pod):
-    _push('pod', 'started', pod.podName)
+def pod_terminated(pod):
+    _push('pod', 'terminated', pod.podName, { 'old_status': pod.status })
+
+def pod_terminating(pod):
+    _push('pod', 'terminating', pod.podName, { 'old_status': pod.status })
+
+def pod_started(pod, was_crashed = False):
+    _push('pod', 'started', pod.podName, { 'was_crashed': was_crashed })
 
 def pod_status(pod):
-    _push('pod', 'status', pod.podName, { 'status': pod.status })
+    _push('pod', 'status', pod.podName, {
+        'assigned_cpu': pod.assigned_cpu,
+        'available_cpu': pod.available_cpu,
+        'status': pod.status,
+    })
 
 
 # Request lifecycle

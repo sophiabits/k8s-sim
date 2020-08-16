@@ -169,6 +169,36 @@ class MetricsProcessor:
             ])
         return rows
 
+    def pod_usage(self):
+        rows = [['t', 'CPU Usage (% of total)']]
+        seen_t_values = set()
+        for row in self.data:
+            t = row['t']
+            if t in seen_t_values: continue
+            seen_t_values.add(t)
+
+            assigned_cpu = 0
+            available_cpu = 0
+            pod_count = 0
+
+            seen_pod_names = set()
+            for row2 in self.data:
+                if row2['category'] != 'pod': continue
+                if row2['id'] in seen_pod_names: continue
+                if row2['t'] < t: continue
+                if row2['t'] > t: break
+
+                if row2['event'] == 'status':
+                    assigned_cpu += row2['assigned_cpu']
+                    available_cpu += row2['available_cpu']
+                    pod_count += 1
+                    seen_pod_names.add(row2['id'])
+
+            if assigned_cpu > 0:
+                rows.append([t, (assigned_cpu - available_cpu) / assigned_cpu])
+
+        return rows
+
 def format_row(row):
     s = []
     for col in row:
@@ -216,6 +246,10 @@ def process_many(file_paths, output_dir: str = 'stats'):
         'pods.csv',
     )
     write_csvs(
+        [p.pod_usage() for p in processors],
+        'pods_cpu.csv',
+    )
+    write_csvs(
         [p.requests_plot() for p in processors],
         'reqs.csv',
     )
@@ -237,6 +271,10 @@ def process_one(file_path: str = './metrics.json', output_dir: str = 'stats'):
 
     with open(joinpath(output_dir, 'pods.csv'), 'w') as fp:
         for row in processor.pod_healthiness():
+            fp.write(format_row(row))
+
+    with open(joinpath(output_dir, 'pods_cpu.csv'), 'w') as fp:
+        for row in processor.pod_usage():
             fp.write(format_row(row))
 
     with open(joinpath(output_dir, 'reqs.csv'), 'w') as fp:

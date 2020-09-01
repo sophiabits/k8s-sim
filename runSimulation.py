@@ -32,7 +32,7 @@ def main(
     # reqHandlerThread = threading.Thread(name='RequestHandler', target=reqHandler)
     schedulerThread = threading.Thread(name='Scheduler', target=scheduler)
     print('Threads Starting')
-    reqHandlerThread.start()
+    # reqHandlerThread.start()
     nodeControllerThread.start()
     depControllerThread.start()
     schedulerThread.start()

@@ -16,7 +16,7 @@ class Pod:
     def __init__(self, NAME, ASSIGNED_CPU, DEPLABEL):
         self.podName = NAME
         self.assigned_cpu = ASSIGNED_CPU
-        self.available_cpu = ASSIGNED_CPU # THIS NEEDS TO BE MODIFIED WHEN THREADS ARE RUNNING
+        self.available_cpu = ASSIGNED_CPU
         self.deploymentLabel = DEPLABEL
         self.status = 'PENDING'
         self.crash = threading.Event()

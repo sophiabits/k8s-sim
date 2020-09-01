@@ -48,6 +48,7 @@ class APIServer:
         self.etcd.deploymentList.append(deployment)
 
         metrics.deployment_created(deployment)
+        return deployment
 
     # RemoveDeployment deletes the associated Deployment object from etcd and sets the status of all associated pods to 'TERMINATING'
     def RemoveDeployment(self, deploymentLabel: str):

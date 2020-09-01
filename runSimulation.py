@@ -3,6 +3,7 @@ import time
 
 import metrics
 from request import Request
+from autoscalers import HPA
 from dep_controller import DepController
 from api_server import APIServer
 from load_balancing import RoundRobinLoadBalancer
@@ -20,7 +21,10 @@ def main(
 ):
     _nodeCtlLoop = 2
     _depCtlLoop = 2
+    _hpaCtlLoop = 2
     _scheduleCtlLoop = 2
+
+    disposable_threads = []
 
     apiServer = APIServer()
     depController = DepController(apiServer, _depCtlLoop)
@@ -50,8 +54,11 @@ def main(
             if cmdAttributes[0] == 'Deploy':
                 deployment = apiServer.CreateDeployment(cmdAttributes[1:])
 
-                load_balancer = LoadBalancer(apiServer, deployment)
-                load_balancer.start()
+                load_balancer_thread = threading.Thread(
+                    target=LoadBalancer(apiServer, deployment),
+                )
+                load_balancer_thread.start()
+                disposable_threads.append(load_balancer_thread)
             elif cmdAttributes[0] == 'AddNode':
                 apiServer.CreateWorker(cmdAttributes[1:])
             elif cmdAttributes[0] == 'CrashPod':
@@ -60,11 +67,21 @@ def main(
                 apiServer.RemoveDeployment(cmdAttributes[1])
             elif cmdAttributes[0] == 'ReqIn':
                 apiServer.PushReq(cmdAttributes[1:])
+            elif cmdAttributes[0] == 'CreateHPA':
+                hpa_thread = threading.Thread(
+                    target=HPA(apiServer, _hpaCtlLoop, cmdAttributes[1:]),
+                )
+                hpa_thread.start()
+                disposable_threads.append(hpa_thread)
             elif cmdAttributes[0] == 'Sleep':
                 time_to_sleep += int(cmdAttributes[1])
         time.sleep(time_to_sleep)
     time.sleep(5)
     print('Shutting down threads')
+
+    for thread in disposable_threads:
+        thread.running = False
+        thread.join()
 
     # reqHandler.running = False
     depController.running = False

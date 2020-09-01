@@ -1,5 +1,4 @@
 from abc import ABCMeta, abstractmethod
-import threading
 
 from api_server import APIServer
 from deployment import Deployment
@@ -50,11 +49,6 @@ class ILoadBalancer:
 
     @abstractmethod
     def route(self, pods, request): raise NotImplementedError
-
-    def start(self):
-        # TODO -- make sure these threads get cleaned up on simulator close / deployment deletion
-        thread = threading.Thread(target=self)
-        thread.start()
 
 
 class RoundRobinLoadBalancer(ILoadBalancer):

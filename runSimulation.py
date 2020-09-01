@@ -13,7 +13,11 @@ from scheduler import Scheduler
 # This is the simulation frontend that will interact with your APIServer to change cluster configurations and handle requests
 # All building files are guidelines, and you are welcome to change them as much as desired so long as the required functionality is still implemented.
 
-def main(instructions_file = './instructions.txt', metrics_file = './metrics.json'):
+def main(
+    instructions_file = './instructions.txt',
+    metrics_file = './metrics.json',
+    LoadBalancer = RoundRobinLoadBalancer, # load balancer implementation to use
+):
     _nodeCtlLoop = 2
     _depCtlLoop = 2
     _scheduleCtlLoop = 2
@@ -46,7 +50,7 @@ def main(instructions_file = './instructions.txt', metrics_file = './metrics.jso
             if cmdAttributes[0] == 'Deploy':
                 deployment = apiServer.CreateDeployment(cmdAttributes[1:])
 
-                load_balancer = RoundRobinLoadBalancer(apiServer, deployment)
+                load_balancer = LoadBalancer(apiServer, deployment)
                 load_balancer.start()
             elif cmdAttributes[0] == 'AddNode':
                 apiServer.CreateWorker(cmdAttributes[1:])

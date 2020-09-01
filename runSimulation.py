@@ -24,7 +24,7 @@ def main(
     _hpaCtlLoop = 2
     _scheduleCtlLoop = 2
 
-    disposable_threads = []
+    disposables = []
 
     apiServer = APIServer()
     depController = DepController(apiServer, _depCtlLoop)
@@ -54,11 +54,16 @@ def main(
             if cmdAttributes[0] == 'Deploy':
                 deployment = apiServer.CreateDeployment(cmdAttributes[1:])
 
-                load_balancer_thread = threading.Thread(
-                    target=LoadBalancer(apiServer, deployment),
-                )
+                load_balancer = LoadBalancer(apiServer, deployment)
+                load_balancer_thread = threading.Thread(target=load_balancer)
+
+                def cleanup():
+                    load_balancer.running = False
+                    load_balancer.deployment.waiting.set()
+                    load_balancer_thread.join()
+
                 load_balancer_thread.start()
-                disposable_threads.append(load_balancer_thread)
+                disposables.append(cleanup)
             elif cmdAttributes[0] == 'AddNode':
                 apiServer.CreateWorker(cmdAttributes[1:])
             elif cmdAttributes[0] == 'CrashPod':
@@ -68,20 +73,23 @@ def main(
             elif cmdAttributes[0] == 'ReqIn':
                 apiServer.PushReq(cmdAttributes[1:])
             elif cmdAttributes[0] == 'CreateHPA':
-                hpa_thread = threading.Thread(
-                    target=HPA(apiServer, _hpaCtlLoop, cmdAttributes[1:]),
-                )
+                hpa = HPA(apiServer, _hpaCtlLoop, cmdAttributes[1:])
+                hpa_thread = threading.Thread(target=hpa)
+
+                def cleanup():
+                    hpa.running = False
+                    hpa_thread.join()
+
                 hpa_thread.start()
-                disposable_threads.append(hpa_thread)
+                disposables.append(cleanup)
             elif cmdAttributes[0] == 'Sleep':
                 time_to_sleep += int(cmdAttributes[1])
         time.sleep(time_to_sleep)
     time.sleep(5)
     print('Shutting down threads')
 
-    for thread in disposable_threads:
-        thread.running = False
-        thread.join()
+    for dispose in disposables:
+        dispose()
 
     # reqHandler.running = False
     depController.running = False

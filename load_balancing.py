@@ -23,7 +23,10 @@ class ILoadBalancer:
             self.deployment.waiting.clear()
 
             with self.api_server.etcdLock:
-                candidate_endpoints = self.api_server.GetEndPointsByLabel(self.deployment.deploymentLabel)
+                candidate_endpoints = list(filter(
+                    lambda endpoint: self.api_server.CheckEndPoint(endpoint),
+                    self.api_server.GetEndPointsByLabel(self.deployment.deploymentLabel),
+                ))
 
             pods = [endpoint.pod for endpoint in candidate_endpoints]
             if not pods:

@@ -5,6 +5,7 @@ import metrics
 from request import Request
 from dep_controller import DepController
 from api_server import APIServer
+from load_balancing import RoundRobinLoadBalancer
 # from req_handler import ReqHandler
 from node_controller import NodeController
 from scheduler import Scheduler
@@ -43,7 +44,10 @@ def main(instructions_file = './instructions.txt', metrics_file = './metrics.jso
 
         with apiServer.etcdLock:
             if cmdAttributes[0] == 'Deploy':
-                apiServer.CreateDeployment(cmdAttributes[1:])
+                deployment = apiServer.CreateDeployment(cmdAttributes[1:])
+
+                load_balancer = RoundRobinLoadBalancer(apiServer, deployment)
+                load_balancer.start()
             elif cmdAttributes[0] == 'AddNode':
                 apiServer.CreateWorker(cmdAttributes[1:])
             elif cmdAttributes[0] == 'CrashPod':

@@ -5,7 +5,7 @@ import metrics
 from request import Request
 from dep_controller import DepController
 from api_server import APIServer
-from req_handler import ReqHandler
+# from req_handler import ReqHandler
 from node_controller import NodeController
 from scheduler import Scheduler
 
@@ -13,18 +13,18 @@ from scheduler import Scheduler
 # All building files are guidelines, and you are welcome to change them as much as desired so long as the required functionality is still implemented.
 
 def main(instructions_file = './instructions.txt', metrics_file = './metrics.json'):
-    _nodeCtlLoop = 5
-    _depCtlLoop = 5
-    _scheduleCtlLoop = 5
+    _nodeCtlLoop = 2
+    _depCtlLoop = 2
+    _scheduleCtlLoop = 2
 
     apiServer = APIServer()
     depController = DepController(apiServer, _depCtlLoop)
     nodeController = NodeController(apiServer, _nodeCtlLoop)
-    reqHandler = ReqHandler(apiServer)
+    # reqHandler = ReqHandler(apiServer)
     scheduler = Scheduler(apiServer, _scheduleCtlLoop)
     depControllerThread = threading.Thread(name='DeploymentController', target=depController)
     nodeControllerThread = threading.Thread(name='NodeController', target=nodeController)
-    reqHandlerThread = threading.Thread(name='RequestHandler', target=reqHandler)
+    # reqHandlerThread = threading.Thread(name='RequestHandler', target=reqHandler)
     schedulerThread = threading.Thread(name='Scheduler', target=scheduler)
     print('Threads Starting')
     reqHandlerThread.start()
@@ -39,8 +39,7 @@ def main(instructions_file = './instructions.txt', metrics_file = './metrics.jso
     for command in commands:
         cmdAttributes = command.split()
 
-        # Note: Originally, simulator slept for 5s between each command. Is this a requirement?
-        time_to_sleep = 0 # in seconds
+        time_to_sleep = 3 # in seconds
 
         with apiServer.etcdLock:
             if cmdAttributes[0] == 'Deploy':
@@ -54,12 +53,12 @@ def main(instructions_file = './instructions.txt', metrics_file = './metrics.jso
             elif cmdAttributes[0] == 'ReqIn':
                 apiServer.PushReq(cmdAttributes[1:])
             elif cmdAttributes[0] == 'Sleep':
-                time_to_sleep = int(cmdAttributes[1])
-        time.sleep(5 + time_to_sleep)
+                time_to_sleep += int(cmdAttributes[1])
+        time.sleep(time_to_sleep)
     time.sleep(5)
     print('Shutting down threads')
 
-    reqHandler.running = False
+    # reqHandler.running = False
     depController.running = False
     scheduler.running = False
     nodeController.running = False
@@ -67,7 +66,7 @@ def main(instructions_file = './instructions.txt', metrics_file = './metrics.jso
     depControllerThread.join()
     schedulerThread.join()
     nodeControllerThread.join()
-    reqHandlerThread.join()
+    # reqHandlerThread.join()
 
     print('Recording metrics...')
     metrics.dump(metrics_file)

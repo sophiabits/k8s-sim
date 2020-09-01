@@ -135,10 +135,6 @@ class APIServer:
 
         metrics.pod_started(pod)
 
-    # # GetPod returns the pod object stored in the internal podList of a WorkerNode
-    # def GetPod(self, endPoint):
-    #     pass
-
     # TerminatePod finds the pod associated with a given EndPoint and sets it's status to 'TERMINATING'
     # No new requests will be sent to a pod marked 'TERMINATING'.
     def TerminatePod(self, endpoint: EndPoint):
@@ -182,9 +178,10 @@ class APIServer:
 
         for deployment in self.GetDeployments():
             # Try to find the deployment for this request
-            if deployment.deploymentLabel == info[0]:
-                deployment.pendingReqs.append(info)
-                self.requestWaiting.set()
+            if deployment.deploymentLabel == info[1]:
+                with deployment.lock:
+                    deployment.pendingReqs.append(info)
+                    deployment.waiting.set()
         else:
             # TODO -- error couldn't find deployment
             pass

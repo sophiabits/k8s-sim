@@ -16,39 +16,39 @@ class ReqHandler:
 
     def __call__(self):
         print("reqHandler start")
-        while self.running:
-            self.apiServer.requestWaiting.wait()
-            with self.apiServer.etcdLock:
-                if not self.apiServer.etcd.pendingReqs: break
+        # while self.running:
+        #     self.apiServer.requestWaiting.wait()
+        #     with self.apiServer.etcdLock:
+        #         if not self.apiServer.etcd.pendingReqs: break
 
-                request_info = self.apiServer.etcd.pendingReqs.pop()
-                request = Request(request_info)
-                # print('[ReqHandler] Got a request to service:', request)
+        #         request_info = self.apiServer.etcd.pendingReqs.pop()
+        #         request = Request(request_info)
+        #         # print('[ReqHandler] Got a request to service:', request)
 
-                candidate_endpoints = list(filter(
-                    lambda endpoint: self.apiServer.CheckEndPoint(endpoint),
-                    self.apiServer.GetEndPointsByLabel(request.deploymentLabel),
-                ))
+        #         candidate_endpoints = list(filter(
+        #             lambda endpoint: self.apiServer.CheckEndPoint(endpoint),
+        #             self.apiServer.GetEndPointsByLabel(request.deploymentLabel),
+        #         ))
 
-                if not candidate_endpoints:
-                    # In reality, we'd probably put this request back onto the queue
-                    # But Stephen has said it's OK to just fail the request when there isn't an available pod.
-                    metrics.request_not_routed(request)
-                    # print('[ReqHandler] Failed to find pod to service request', request)
-                else:
-                    for endpoint in candidate_endpoints:
-                        # First try to find a pod which can service the request immediately
-                        pod: Pod = endpoint.pod
-                        if pod.has_capacity():
-                            metrics.request_routed(pod, request)
-                            pod.HandleRequest(request)
-                            break
-                    else:
-                        # No pods can service the request immediately, so just chuck it on the first pod
-                        pod = candidate_endpoints[0].pod
-                        metrics.request_routed(pod, request)
+        #         if not candidate_endpoints:
+        #             # In reality, we'd probably put this request back onto the queue
+        #             # But Stephen has said it's OK to just fail the request when there isn't an available pod.
+        #             metrics.request_not_routed(request)
+        #             # print('[ReqHandler] Failed to find pod to service request', request)
+        #         else:
+        #             for endpoint in candidate_endpoints:
+        #                 # First try to find a pod which can service the request immediately
+        #                 pod: Pod = endpoint.pod
+        #                 if pod.has_capacity():
+        #                     metrics.request_routed(pod, request)
+        #                     pod.HandleRequest(request)
+        #                     break
+        #             else:
+        #                 # No pods can service the request immediately, so just chuck it on the first pod
+        #                 pod = candidate_endpoints[0].pod
+        #                 metrics.request_routed(pod, request)
 
-                        pod.HandleRequest(request)
+        #                 pod.HandleRequest(request)
 
-                self.apiServer.requestWaiting.clear()
+        #         self.apiServer.requestWaiting.clear()
         print("ReqHandlerShutdown")

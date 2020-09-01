@@ -174,14 +174,16 @@ class APIServer:
         else:
             print('[APIServer] Failed to find a suitable pod to crash!', deploymentLabel)
 
-    # PushReq adds the incoming request to the handling queue
+    # PushReq adds the incoming request to the target deployment's handling queue
     def PushReq(self, info):
         metrics.request_created(info[0])
-        self.etcd.reqCreator.submit(self.reqHandle, info)
+        # A2 NOTE: Assuming we don't need to keep the machinery for reqCreator / reqHandle
 
-    # Creates requests and notifies the handler of request to be dealt with
-    def reqHandle(self, info):
-        # Note: Stephen has indicated reqHandle should make use of Request objects
-        # created by etcd.
-        self.etcd.pendingReqs.append(info)
-        self.requestWaiting.set()
+        for deployment in self.GetDeployments():
+            # Try to find the deployment for this request
+            if deployment.deploymentLabel == info[0]:
+                deployment.pendingReqs.append(info)
+                self.requestWaiting.set()
+        else:
+            # TODO -- error couldn't find deployment
+            pass

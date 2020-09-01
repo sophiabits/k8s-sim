@@ -1,5 +1,3 @@
-from concurrent.futures import ThreadPoolExecutor
-import threading
 from typing import List
 
 from deployment import Deployment
@@ -19,14 +17,9 @@ class Etcd:
     pendingPodList: List[Pod]
     runningPodList: List[Pod]
 
-    pendingReqs: List[dict]
-    reqCreator: ThreadPoolExecutor
-
     def __init__(self):
         self.pendingPodList = []
         self.runningPodList = []
         self.deploymentList = []
         self.nodeList = []
         self.endPointList = []
-        self.pendingReqs = []
-        self.reqCreator = ThreadPoolExecutor(max_workers=1)

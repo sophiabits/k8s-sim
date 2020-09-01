@@ -4,6 +4,7 @@ import threading
 from api_server import APIServer
 from deployment import Deployment
 from request import Request
+import metrics
 
 class ILoadBalancer:
     __metaclass__ = ABCMeta
@@ -30,6 +31,7 @@ class ILoadBalancer:
                 # No pods available to handle the request for this deployment, so we'll skip this iteration
                 # TODO -- does this impl actually work?
                 # TODO -- metric
+                print('@@@@ FAILED TO FIND AVAILABLE PODS FOR DEP', self.deployment.deploymentLabel)
                 self.deployment.waiting.set()
                 continue
 
@@ -39,35 +41,39 @@ class ILoadBalancer:
 
             for info in request_infos:
                 request = Request(info)
-                self.handle(pods, request)
+                pod = self.route(pods, request)
+
+                metrics.request_routed(pod, request)
+                pod.HandleRequest(request)
 
         print('LoadBalancer shutdown')
 
     @abstractmethod
-    def handle(self, pods, request): raise NotImplementedError
+    def route(self, pods, request): raise NotImplementedError
 
     def start(self):
         # TODO -- make sure these threads get cleaned up on simulator close / deployment deletion
         thread = threading.Thread(target=self)
         thread.start()
 
+
 class RoundRobinLoadBalancer(ILoadBalancer):
     ''' Tracks which pod index to assign the next incoming request to. '''
     current_index = 0
 
     # Cycle through pods in a deployment
-    def handle(self, pods, request):
+    def route(self, pods, request):
         if self.current_index >= len(pods):
             # Wrap around back to the first pod
             self.current_index = 0
 
         pod = pods[self.current_index]
-        metrics.request_routed(pod, request)
-        pod.HandleRequest(request)
-
         self.current_index += 1
+        return pod
+
 
 class UtilizationAwareLoadBalancer(ILoadBalancer):
     # Send request to lowest utilized pod
-    def handle(self, pods, request):
+    def route(self, pods, request):
+        # TODO
         pass

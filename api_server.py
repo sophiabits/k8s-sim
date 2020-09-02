@@ -42,6 +42,8 @@ class APIServer:
 
         metrics.node_created(node)
 
+        return node
+
     # CreateDeployment creates a Deployment object from a list of arguments and adds it to the etcd deploymentList
     def CreateDeployment(self, info):
         deployment = Deployment(info)

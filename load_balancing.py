@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+import time
 
 from api_server import APIServer
 from deployment import Deployment
@@ -31,9 +32,9 @@ class ILoadBalancer:
             pods = [endpoint.pod for endpoint in candidate_endpoints]
             if not pods:
                 # No pods available to handle the request for this deployment, so we'll skip this iteration
-                # TODO -- does this impl actually work?
                 # TODO -- metric
-                print('@@@@ FAILED TO FIND AVAILABLE PODS FOR DEP', self.deployment.deploymentLabel)
+                print('@@@@ FAILED TO FIND AVAILABLE PODS FOR DEP', self.deployment.deploymentLabel, self.deployment.currentReplicas)
+                time.sleep(2)
                 self.deployment.waiting.set()
                 continue
 

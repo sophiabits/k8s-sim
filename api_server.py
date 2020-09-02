@@ -102,6 +102,11 @@ class APIServer:
     def CheckEndPoint(self, endpoint: EndPoint) -> bool:
         return endpoint.pod.status == 'RUNNING'
 
+    def GetDeploymentByLabel(self, deploymentLabel: str) -> Deployment:
+        for deployment in self.etcd.deploymentList:
+            if deployment.deploymentLabel == deploymentLabel:
+                return deployment
+
     # GetEndPointsByLabel returns a list of EndPoints associated with a given deployment
     def GetEndPointsByLabel(self, deploymentLabel: str) -> List[EndPoint]:
         return list(filter(

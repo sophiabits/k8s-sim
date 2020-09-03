@@ -64,12 +64,10 @@ class RoundRobinLoadBalancer(ILoadBalancer):
 class UtilizationAwareLoadBalancer(ILoadBalancer):
     # Send request to lowest utilized pod
     def route(self, pods):
-        # TODO -- in the event that two pods have the same available cpu
-        #         (e.g., zero) the first pod in the list will always be the one selected
-        #         probably worth checking with stephen whether this is expected behavior or not
         pods_by_cpu = sorted(
             pods,
             key=lambda pod: pod.available_cpu,
+            reverse=True,
         )
 
         return pods_by_cpu[0]

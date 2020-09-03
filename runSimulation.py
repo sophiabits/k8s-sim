@@ -7,7 +7,6 @@ from autoscalers import HPA
 from dep_controller import DepController
 from api_server import APIServer
 from load_balancing import RoundRobinLoadBalancer
-# from req_handler import ReqHandler
 from node_controller import NodeController
 from scheduler import Scheduler
 
@@ -29,14 +28,11 @@ def main(
     apiServer = APIServer()
     depController = DepController(apiServer, _depCtlLoop)
     nodeController = NodeController(apiServer, _nodeCtlLoop)
-    # reqHandler = ReqHandler(apiServer)
     scheduler = Scheduler(apiServer, _scheduleCtlLoop)
     depControllerThread = threading.Thread(name='DeploymentController', target=depController)
     nodeControllerThread = threading.Thread(name='NodeController', target=nodeController)
-    # reqHandlerThread = threading.Thread(name='RequestHandler', target=reqHandler)
     schedulerThread = threading.Thread(name='Scheduler', target=scheduler)
     print('Threads Starting')
-    # reqHandlerThread.start()
     nodeControllerThread.start()
     depControllerThread.start()
     schedulerThread.start()
@@ -91,15 +87,12 @@ def main(
     for dispose in disposables:
         dispose()
 
-    # reqHandler.running = False
     depController.running = False
     scheduler.running = False
     nodeController.running = False
-    apiServer.requestWaiting.set()
     depControllerThread.join()
     schedulerThread.join()
     nodeControllerThread.join()
-    # reqHandlerThread.join()
 
     print('Recording metrics...')
     metrics.dump(metrics_file)

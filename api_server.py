@@ -17,7 +17,6 @@ class APIServer:
     def __init__(self):
         self.etcd = Etcd()
         self.etcdLock = threading.Lock()
-        self.requestWaiting = threading.Event()
 
     def GetDeployments(self) -> List[Deployment]:
         ''' Returns the list of deployments stored in etcd. '''

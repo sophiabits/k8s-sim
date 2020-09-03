@@ -4,7 +4,7 @@ import time
 from api_server import APIServer
 from controllers import PIDController
 
-SETPOINT_BUFFER = 0.1 # +- 10%
+SETPOINT_BUFFER = 10 # measured in points, i.e. for setpoint=50 the margin is 40<=x<=60 not 45<=x<=55
 
 ''' Horizontal pod autoscaler '''
 class HPA:
@@ -43,8 +43,8 @@ class HPA:
             if self.measurements.is_full():
                 measured_value = self.measurements.average()
 
-                min_bound = self.set_point * (1 - SETPOINT_BUFFER)
-                max_bound = self.set_point * (1 + SETPOINT_BUFFER)
+                min_bound = self.set_point - SETPOINT_BUFFER
+                max_bound = self.set_point + SETPOINT_BUFFER
 
                 # Step 2.1 Check if MV is off by >10%
                 if measured_value < min_bound or measured_value > max_bound:

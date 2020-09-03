@@ -47,6 +47,13 @@ class ILoadBalancer:
     def route(self, pods): raise NotImplementedError
 
 
+class FirstFitLoadBalancer(ILoadBalancer):
+    def route(self, pods):
+        for pod in pods:
+            if pod.available_cpu > 0:
+                return pod
+
+
 class RoundRobinLoadBalancer(ILoadBalancer):
     ''' Tracks which pod index to assign the next incoming request to. '''
     current_index = 0

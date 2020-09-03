@@ -35,8 +35,9 @@ class HPA:
             # Step 1: Calculate utilization for this step
             endpoints = self.api_server.GetEndPointsByLabel(self.deployment_label)
             current_utilization = measure_utilization(endpoints)
-            # print(f'HPAScaler measuring load {self.deployment_label} {current_utilization}')
-            self.measurements.append(current_utilization)
+            if current_utilization is not math.inf:
+                # print(f'HPAScaler measuring load {self.deployment_label} {current_utilization}')
+                self.measurements.append(current_utilization)
 
             # Step 2: See if we need to trigger an autoscale event
             if self.measurements.is_full():
@@ -69,12 +70,6 @@ class HPA:
 
                     print(f'HPAScaler: Maybe scaling deployment by {scale_magnitude} replicas?')
 
-                    # new_assigned_metric = metric_assigned + scale_magnitude * deployment.cpuCost
-                    # new_measured_value = metric_used / new_assigned_metric
-
-                    # print(f'HPAScaler: If that scale goes through, MV will be:', new_measured_value)
-
-                    # TODO -- support going to 0 expected replicas?
                     deployment.expectedReplicas = max(deployment.expectedReplicas + scale_magnitude, 1)
                     print(f'HPAScaler: new expectedReplicas=', deployment.expectedReplicas)
 
@@ -86,18 +81,11 @@ class HPA:
                 else:
                     print(f'HPAScaler: MV:', measured_value, 'SP:', self.set_point, '-> no scale')
 
-                '''
-                If there were any missing metrics, we recompute the average more conservatively, assuming those pods were consuming 100% of the desired value in case of a scale down, and 0% in case of a scale up. This dampens the magnitude of any potential scale.
-                Furthermore, if any not-yet-ready pods were present, and we would have scaled up without factoring in missing metrics or not-yet-ready pods, we conservatively assume the not-yet-ready pods are consuming 0% of the desired metric, further dampening the magnitude of a scale up.
-                '''
-
             time.sleep(self.time)
         print('HPAScalerShutDown')
 
 def measure_utilization(endpoints):
-    # n = 0
     n_discarded = 0
-    # total_utilization = 0
 
     total_assigned = 0
     total_used = 0
@@ -106,20 +94,16 @@ def measure_utilization(endpoints):
         # As per k8s (https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/):
         # "All Pods with a deletion timestamp set (i.e. Pods in the process of being shut down) and all failed Pods are discarded."
         # "... if any pod has yet to become ready (i.e. it's still initializing) ..., that pod is set aside as well."
-        if endpoint.pod.status not in ('RUNNING', 'TERMINATING'):
-            n_discarded += 1
-        else:
-            # n += 1
-
+        if endpoint.pod.status == 'RUNNING':
             total_assigned += endpoint.pod.assigned_cpu
             total_used += endpoint.pod.available_cpu
+        elif endpoint.pod.status == 'PENDING':
+            total_assigned += endpoint.pod.assigned_cpu
 
-            # pod_utilization = 1 - endpoint.pod.available_cpu / endpoint.pod.assigned_cpu
-            # total_utilization += pod_utilization * 100
+    if total_assigned == 0:
+        return math.inf
 
-    return total_used / max(total_assigned, 1) * 100 # avoid div by 0
-    # return total_assigned, total_used, total_assigned / min(total_used, 1)
-    # return n, n_discarded, total_utilization
+    return total_used / total_assigned * 100
 
 class CappedList:
     def __init__(self, max_size: int):

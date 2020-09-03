@@ -30,8 +30,9 @@ class ILoadBalancer:
             pods = [endpoint.pod for endpoint in candidate_endpoints]
             if pods:
                 pod = self.route(pods)
-                if not pod:
-                    continue # No available pod
+                if not pod or pod.available_cpu == 0:
+                    # No available pod
+                    continue
 
                 request = self.deployment.pop_request()
                 if not request:

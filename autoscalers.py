@@ -23,11 +23,7 @@ class HPA:
         self.sync_period = int(info[2])
 
         self.controller = PIDController(kp=1.0, ki=1.0, kd=1.0) # TODO tune
-        measurements_len = max(
-            1,
-            math.floor(self.sync_period / loop_time),
-        )
-        self.measurements = CappedList(math.floor(self.sync_period / loop_time))
+        self.measurements = CappedList(max(1, math.floor(self.sync_period / loop_time)))
 
     def __call__(self):
         print('HPAScalerStart')

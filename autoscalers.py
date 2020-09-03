@@ -84,7 +84,7 @@ def measure_utilization(endpoints):
     n_discarded = 0
 
     total_assigned = 0
-    total_used = 0
+    total_available = 0
 
     for endpoint in endpoints:
         # As per k8s (https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/):
@@ -92,13 +92,14 @@ def measure_utilization(endpoints):
         # "... if any pod has yet to become ready (i.e. it's still initializing) ..., that pod is set aside as well."
         if endpoint.pod.status == 'RUNNING':
             total_assigned += endpoint.pod.assigned_cpu
-            total_used += endpoint.pod.available_cpu
+            total_available += endpoint.pod.available_cpu
         elif endpoint.pod.status == 'PENDING':
             total_assigned += endpoint.pod.assigned_cpu
 
     if total_assigned == 0:
         return math.inf
 
+    total_used = total_assigned - total_available
     return total_used / total_assigned * 100
 
 class CappedList:

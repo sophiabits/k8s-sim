@@ -1,5 +1,7 @@
 import threading
 
+from request import Request
+
 # Deployment objects set the configuration and expected number of Pod objects
 # label is the label associated with the deployment.
 # currentReplicas is the number of pods currently running that are associated with
@@ -21,3 +23,15 @@ class Deployment:
 
     def __repr__(self):
         return f'<Deployment {self.deploymentLabel}>'
+
+    def pop_request(self):
+        with self.lock:
+            if self.pendingReqs:
+                req = self.pendingReqs.pop(0)
+                has_more_reqs = len(self.pendingReqs) > 0
+
+                if has_more_reqs:
+                    self.waiting.set()
+                else:
+                    self.waiting.clear()
+                return Request(req)

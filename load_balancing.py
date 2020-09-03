@@ -3,7 +3,6 @@ import time
 
 from api_server import APIServer
 from deployment import Deployment
-from request import Request
 import metrics
 
 class ILoadBalancer:
@@ -21,7 +20,6 @@ class ILoadBalancer:
         print('LoadBalancer start')
         while self.running:
             self.deployment.waiting.wait()
-            self.deployment.waiting.clear()
 
             with self.api_server.etcdLock:
                 candidate_endpoints = list(filter(
@@ -30,21 +28,14 @@ class ILoadBalancer:
                 ))
 
             pods = [endpoint.pod for endpoint in candidate_endpoints]
-            if not pods:
-                # No pods available to handle the request for this deployment, so we'll skip this iteration
-                # TODO -- metric
-                print('@@@@ FAILED TO FIND AVAILABLE PODS FOR DEP', self.deployment.deploymentLabel, self.deployment.currentReplicas)
-                time.sleep(2)
-                self.deployment.waiting.set()
-                continue
+            if pods:
+                pod = self.route(pods)
+                if not pod:
+                    continue # No available pod
 
-            with self.deployment.lock:
-                request_infos = self.deployment.pendingReqs
-                self.deployment.pendingReqs = []
-
-            for info in request_infos:
-                request = Request(info)
-                pod = self.route(pods, request)
+                request = self.deployment.pop_request()
+                if not request:
+                    continue # No request waiting
 
                 metrics.request_routed(pod, request)
                 pod.HandleRequest(request)
@@ -52,7 +43,7 @@ class ILoadBalancer:
         print('LoadBalancer shutdown')
 
     @abstractmethod
-    def route(self, pods, request): raise NotImplementedError
+    def route(self, pods): raise NotImplementedError
 
 
 class RoundRobinLoadBalancer(ILoadBalancer):
@@ -60,7 +51,7 @@ class RoundRobinLoadBalancer(ILoadBalancer):
     current_index = 0
 
     # Cycle through pods in a deployment
-    def route(self, pods, request):
+    def route(self, pods):
         if self.current_index >= len(pods):
             # Wrap around back to the first pod
             self.current_index = 0
@@ -72,7 +63,7 @@ class RoundRobinLoadBalancer(ILoadBalancer):
 
 class UtilizationAwareLoadBalancer(ILoadBalancer):
     # Send request to lowest utilized pod
-    def route(self, pods, request):
+    def route(self, pods):
         # TODO -- in the event that two pods have the same available cpu
         #         (e.g., zero) the first pod in the list will always be the one selected
         #         probably worth checking with stephen whether this is expected behavior or not

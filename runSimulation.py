@@ -44,7 +44,7 @@ def main(
     for command in commands:
         cmdAttributes = command.split()
 
-        time_to_sleep = 3 # in seconds
+        time_to_sleep = 0 # in seconds
 
         with apiServer.etcdLock:
             if cmdAttributes[0] == 'Deploy':

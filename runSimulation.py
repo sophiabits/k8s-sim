@@ -1,7 +1,7 @@
+import math
 import threading
 import time
 
-import config
 import metrics
 from request import Request
 from autoscalers import HPA
@@ -9,6 +9,41 @@ from dep_controller import DepController
 from api_server import APIServer
 from node_controller import NodeController
 from scheduler import Scheduler
+
+import config
+from metrics import _t_delta
+
+def get_hpa_stats(api, hpas):
+    t = _t_delta()
+    stats = []
+    for hpa in hpas:
+        try:
+            mv = hpa.measurements.average()
+            if mv is math.inf:
+                continue
+
+            dep = api.GetDeploymentByLabel(hpa.deployment_label)
+
+            def get_handled_reqs(pod):
+                return pod.assigned_cpu - pod.available_cpu
+
+            data = [
+                t,
+                hpa.deployment_label,
+                mv,
+                hpa.set_point,
+                dep.currentReplicas,
+                dep.expectedReplicas,
+                len(dep.pendingReqs),
+                sum([get_handled_reqs(endpoint.pod) for endpoint in api.GetEndPointsByLabel(hpa.deployment_label)]),
+            ]
+            data = [str(d) for d in data]
+
+            stats.append(','.join(data))
+        except ZeroDivisionError:
+            pass
+
+    return stats
 
 # This is the simulation frontend that will interact with your APIServer to change cluster configurations and handle requests
 # All building files are guidelines, and you are welcome to change them as much as desired so long as the required functionality is still implemented.
@@ -23,6 +58,8 @@ def main(
     _scheduleCtlLoop = 2
 
     disposables = []
+    hpas = []
+    hpa_log = ['t,Deployment,MV,SP,Current,Expected,Req#(Pending),Req#(Handling)']
 
     apiServer = APIServer()
     depController = DepController(apiServer, _depCtlLoop)
@@ -75,10 +112,14 @@ def main(
                     hpa.running = False
                     hpa_thread.join()
 
+                hpas.append(hpa)
                 hpa_thread.start()
                 disposables.append(cleanup)
             elif cmdAttributes[0] == 'Sleep':
                 time_to_sleep += int(cmdAttributes[1])
+
+        # Get hpa measurements
+        hpa_log += get_hpa_stats(apiServer, hpas)
         time.sleep(time_to_sleep)
     time.sleep(5)
     print('Shutting down threads')
@@ -95,6 +136,8 @@ def main(
 
     print('Recording metrics...')
     metrics.dump(metrics_file)
+    with open('./hpa.csv', 'w') as fp:
+        fp.write('\n'.join(hpa_log))
 
 if __name__ == '__main__':
     main()

@@ -1,15 +1,10 @@
 from abc import ABCMeta, abstractmethod
 import time
 
-from api_server import APIServer
-from deployment import Deployment
 import metrics
 
 class ILoadBalancer:
     __metaclass__ = ABCMeta
-
-    api_server: APIServer
-    deployment: Deployment
 
     def __init__(self, api_server, deployment):
         self.api_server = api_server
@@ -38,6 +33,7 @@ class ILoadBalancer:
                 if not request:
                     continue # No request waiting
 
+                # print(f'LoadBalancer {request} @ {pod}')
                 metrics.request_routed(pod, request)
                 pod.HandleRequest(request)
 

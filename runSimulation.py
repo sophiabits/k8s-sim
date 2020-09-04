@@ -1,12 +1,12 @@
 import threading
 import time
 
+import config
 import metrics
 from request import Request
 from autoscalers import HPA
 from dep_controller import DepController
 from api_server import APIServer
-from load_balancing import RoundRobinLoadBalancer
 from node_controller import NodeController
 from scheduler import Scheduler
 
@@ -16,7 +16,6 @@ from scheduler import Scheduler
 def main(
     instructions_file = './instructions.txt',
     metrics_file = './metrics.json',
-    LoadBalancer = RoundRobinLoadBalancer, # load balancer implementation to use
 ):
     _nodeCtlLoop = 2
     _depCtlLoop = 2
@@ -50,7 +49,7 @@ def main(
             if cmdAttributes[0] == 'Deploy':
                 deployment = apiServer.CreateDeployment(cmdAttributes[1:])
 
-                load_balancer = LoadBalancer(apiServer, deployment)
+                load_balancer = config.load_balancer(apiServer, deployment)
                 load_balancer_thread = threading.Thread(target=load_balancer)
 
                 def cleanup():

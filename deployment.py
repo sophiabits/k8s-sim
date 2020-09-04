@@ -1,5 +1,6 @@
 import threading
 
+import config
 from request import Request
 
 # Deployment objects set the configuration and expected number of Pod objects
@@ -14,7 +15,7 @@ class Deployment:
     def __init__(self, INFOLIST):
         self.deploymentLabel = INFOLIST[0]
         self.currentReplicas = 0
-        self.expectedReplicas = int(INFOLIST[1])
+        self.expectedReplicas = int(INFOLIST[1]) * config.cpu_scale_factor
         self.cpuCost = int(INFOLIST[2])
 
         self.pendingReqs = []

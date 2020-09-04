@@ -1,3 +1,5 @@
+import config
+
 # The WorkerNode is the object to which pods can be scheduled
 # label is the label of the Node
 # assigned_cpu is the amount of cpu assigned to the node
@@ -7,8 +9,8 @@
 class WorkerNode:
     def __init__(self, INFOLIST):
         self.label = INFOLIST[0]
-        self.assigned_cpu = int(INFOLIST[1])
-        self.available_cpu = self.assigned_cpu
+        self.assigned_cpu = int(INFOLIST[1]) * config.cpu_scale_factor
+        self.available_cpu = self.assigned_cpu * config.cpu_scale_factor
         self.status = 'UP'
 
     def __repr__(self):

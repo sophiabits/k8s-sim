@@ -1,6 +1,7 @@
 import math
 import time
 
+import config
 from api_server import APIServer
 from controllers import PIDController
 
@@ -22,17 +23,27 @@ class HPA:
         self.set_point = int(info[1])
         self.sync_period = int(info[2])
 
-        self.controller = PIDController(kp=1.0, ki=1.0, kd=1.0) # TODO tune
+        # self.controller = PIDController(kp=0.85, ki=0.0013, kd=0.1) # TODO tune
+        self.controller = PIDController(kp=0.9, ki=0.0013, kd=0) # TODO tune
+
+
+        # self.controller = PIDController(kp=1.0, ki=1.0, kd=1.0)
         self.measurements = CappedList(max(1, math.floor(self.sync_period / loop_time)))
 
     def __call__(self):
         print('HPAScalerStart')
+        time.sleep(config.autoscale_warmup_time)
         while self.running:
             # Step 1: Calculate utilization for this step
+            deployment = self.api_server.GetDeploymentByLabel(self.deployment_label)
+            if deployment is None:
+                print(f'HPAScaler: ERROR -- COULD NOT FIND ASSOCIATED DEPLOYMENT')
+
             endpoints = self.api_server.GetEndPointsByLabel(self.deployment_label)
-            current_utilization = measure_utilization(endpoints)
+            current_utilization = measure_utilization(endpoints, len(deployment.pendingReqs))
             if current_utilization is not math.inf:
                 # print(f'HPAScaler measuring load {self.deployment_label} {current_utilization}')
+                print(f'HPAScaler({self.deployment_label}): {current_utilization}')
                 self.measurements.append(current_utilization)
 
             # Step 2: See if we need to trigger an autoscale event
@@ -43,31 +54,48 @@ class HPA:
                 max_bound = self.set_point + SETPOINT_BUFFER
 
                 # Step 2.1 Check if MV is off by >10%
+                print('@@@MAX REPLICAS:', self.get_maximum_replicas(deployment.cpuCost))
                 if measured_value < min_bound or measured_value > max_bound:
                     print('---')
+                    print(self.deployment_label)
 
                     print(f'HPAScaler: Calling controller.work. MV:', measured_value, 'SP:', self.set_point)
                     error = self.controller.work(measured_value - self.set_point)
                     print(f'HPAScaler: Controller output =>', error)
 
-                    deployment = self.api_server.GetDeploymentByLabel(self.deployment_label)
-                    if deployment is None:
-                        print(f'HPAScaler: ERROR -- COULD NOT FIND ASSOCIATED DEPLOYMENT')
-
                     # if error is 100, then that means we should double our expected replicas
                     # likewise if error is -100, then that means we need to kill all our pods
                     scaling_factor = error / 100
 
-                    # dampen the magnitude of scaling decisions by rounding toward zero
-                    rounding_fn = math.ceil if scaling_factor < 0 else math.floor
-
                     # this is the number of replicas we'll be destroying or creating
-                    scale_magnitude = rounding_fn(deployment.expectedReplicas * scaling_factor)
+                    scale_magnitude = self.get_scaling_magnitude(
+                        deployment.expectedReplicas,
+                        scaling_factor,
+                    )
 
-                    print(f'HPAScaler: Maybe scaling deployment by {scale_magnitude} replicas?')
+                    if scale_magnitude + deployment.expectedReplicas > self.get_maximum_replicas(deployment.cpuCost):
+                        print(f'HPAScaper: Skipping scale by {scale_magnitude} replicas. Would exceed max replicas {self.get_maximum_replicas(deployment.cpuCost)}')
+                    elif scale_magnitude != 0:
+                        print(f'HPAScaler: Maybe scaling deployment by {scale_magnitude} replicas? (ER={deployment.expectedReplicas})')
 
-                    deployment.expectedReplicas = max(deployment.expectedReplicas + scale_magnitude, 1)
-                    print(f'HPAScaler: new expectedReplicas=', deployment.expectedReplicas)
+                        # # calculate the expected usage after scaling
+                        # with deployment.lock:
+                        #     pending_req_count = len(deployment.pendingReqs)
+                        # current_cpu_count = deployment.cpuCost * deployment.currentReplicas
+                        # current_cpu_used = current_cpu_count * measured_value
+                        # new_cpu_count = current_cpu_count + scaling_factor * deployment.cpuCost
+                        # if scale_magnitude > 0:
+                        #     new_cpu_used = current_cpu_used + min(pending_req_count, scaling_factor * deployment.cpuCost)
+                        # else:
+                        #     new_cpu_used = current_cpu_used - scaling_factor * deployment.cpuCost
+                        # estimated_value = new_cpu_used / new_cpu_count
+
+                        # print(f'HPAScaler: Applying scaling decision estimated to change MV ->', estimated_value)
+
+                        deployment.expectedReplicas = deployment.expectedReplicas + scale_magnitude
+                        print(f'HPAScaler: new expectedReplicas=', deployment.expectedReplicas)
+                    else:
+                        print(f'HPAScaler: .. ignoring, results in no scale')
 
                     print('---')
 
@@ -80,7 +108,30 @@ class HPA:
             time.sleep(self.time)
         print('HPAScalerShutDown')
 
-def measure_utilization(endpoints):
+    def get_maximum_replicas(self, cpu_cost):
+        deployment_count = len(self.api_server.GetDeployments())
+        cluster_cpus = self.api_server.GetClusterResources()['cpu']
+
+        return math.ceil(min(
+            cluster_cpus / deployment_count + 0.1 * cluster_cpus,
+            cluster_cpus,
+        ) / cpu_cost)
+
+    def get_scaling_magnitude(self, expected_replicas, scaling_factor):
+        # if scaling_factor == 1 -> add 100% replicas, and vice versa
+
+        scale_magnitude = expected_replicas * scaling_factor
+        if scaling_factor < 0:
+            scale_magnitude = math.floor(scale_magnitude)
+            if scale_magnitude <= -expected_replicas:
+                # don't kill all our replicas!
+                scale_magnitude = -(expected_replicas - 1)
+        else:
+            scale_magnitude = math.ceil(scale_magnitude)
+
+        return scale_magnitude
+
+def measure_utilization(endpoints, pending_req_count):
     n_discarded = 0
 
     total_assigned = 0
@@ -99,7 +150,7 @@ def measure_utilization(endpoints):
     if total_assigned == 0:
         return math.inf
 
-    total_used = total_assigned - total_available
+    total_used = total_assigned - total_available + pending_req_count
     return total_used / total_assigned * 100
 
 class CappedList:

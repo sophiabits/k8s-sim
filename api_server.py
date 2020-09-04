@@ -34,6 +34,11 @@ class APIServer:
         ''' Returns the list of endpoints stored in etcd. '''
         return [*self.etcd.endPointList]
 
+    def GetClusterResources(self):
+        return {
+            'cpu': sum([node.assigned_cpu for node in self.GetWorkers()]),
+        }
+
     # CreateWorker creates a WorkerNode from a list of arguments and adds it to the etcd nodeList
     def CreateWorker(self, info):
         node = WorkerNode(info)

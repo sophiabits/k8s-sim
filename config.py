@@ -1,4 +1,5 @@
 from load_balancing import RoundRobinLoadBalancer, UtilizationAwareLoadBalancer
 
-cpu_scale_factor = 10
+autoscale_warmup_time = 10
+cpu_scale_factor = 5
 load_balancer = RoundRobinLoadBalancer
